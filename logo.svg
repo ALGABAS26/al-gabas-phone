@@ -1,18 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 250" role="img" aria-labelledby="title desc">
-<title id="title">شعار الجباس استور</title><desc id="desc">شعار ذهبي مستوحى من حرف الجيم وخط عربي أنيق، وتحته الجباس وALGABAS STORE</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 270" role="img" aria-labelledby="title desc">
+<title id="title">شعار الجباس استور</title><desc id="desc">شعار أنيق ذهبي مستوحى من حرف الجيم، وتحته اسم الجباس وALGABAS STORE</desc>
 <defs>
- <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e4a6"/><stop offset=".48" stop-color="#c59a43"/><stop offset="1" stop-color="#8c641d"/></linearGradient>
- <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+ <linearGradient id="gold" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#f4dfa0"/><stop offset=".42" stop-color="#c49a43"/><stop offset=".72" stop-color="#9a6e23"/><stop offset="1" stop-color="#e8ca78"/></linearGradient>
+ <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.2"/></filter>
 </defs>
+<!-- custom abstract ج monogram -->
 <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
- <path d="M184 66 C214 22 300 15 337 54 C363 82 344 110 316 111 C287 112 274 91 290 74 C304 60 323 69 326 82" stroke-width="4"/>
- <path d="M202 70 C224 45 261 37 287 49 C306 58 307 75 291 85" stroke-width="2" opacity=".75"/>
- <path d="M260 101 C254 121 272 134 294 127 C309 123 316 111 313 99" stroke-width="4"/>
- <path d="M306 132 C287 145 260 143 244 129" stroke-width="2.5"/>
- <path d="M234 53 C218 66 215 83 225 97" stroke-width="2" opacity=".75"/>
- <path d="M172 99 C194 112 210 112 226 101" stroke-width="2.5"/>
+ <path d="M157 77 C171 40 216 24 252 37 C282 48 298 76 284 99 C271 120 239 120 224 103 C214 91 222 75 237 74 C247 74 254 82 252 91" stroke-width="7"/>
+ <path d="M169 91 C189 109 213 118 239 111 C258 106 270 93 269 77" stroke-width="3"/>
+ <path d="M222 104 C215 129 234 146 258 139 C277 134 288 118 286 101" stroke-width="5"/>
+ <path d="M251 143 C231 158 203 156 187 139" stroke-width="3"/>
+ <path d="M183 56 C168 70 165 87 174 101" stroke-width="3"/>
+ <path d="M147 111 C166 124 183 126 199 117" stroke-width="3"/>
+ <path d="M132 83 C119 101 120 121 136 135" stroke-width="2" opacity=".7"/>
+ <path d="M304 56 C319 73 321 94 309 109" stroke-width="2" opacity=".7"/>
 </g>
-<text x="260" y="177" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Amiri, 'Noto Naskh Arabic', Cairo, serif" font-size="43" font-weight="600" fill="url(#gold)">الجباس</text>
-<path d="M184 190 H336" stroke="url(#gold)" stroke-width="1.3"/>
-<text x="260" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="5" fill="url(#gold)">ALGABAS STORE</text>
+<circle cx="256" cy="148" r="4.5" fill="url(#gold)"/>
+<text x="220" y="202" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Amiri, 'Noto Naskh Arabic', 'Noto Sans Arabic', Cairo, serif" font-size="58" font-weight="600" fill="url(#gold)">الجباس</text>
+<path d="M108 217 H332" stroke="url(#gold)" stroke-width="1.5"/>
+<path d="M100 217 l8 -4 v8z M340 217 l-8 -4 v8z" fill="url(#gold)"/>
+<text x="220" y="246" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="4.4" fill="#9a742e">ALGABAS STORE</text>
 </svg>

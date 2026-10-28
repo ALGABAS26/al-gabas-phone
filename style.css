@@ -75,3 +75,26 @@
  .topbar>.header-actions{max-width:28%}
  .cart-button{font-size:9px!important}
 }
+
+/* Final header/hero refinement: protect the full iPhone 18 Pro Max banner and give the brand room */
+.topbar{min-height:116px!important;padding-top:10px!important;padding-bottom:10px!important}
+.topbar>.brand{width:clamp(190px,20vw,230px)!important;}
+.topbar>.brand .brand-logo{width:100%!important;height:112px!important;object-fit:contain!important}
+.topbar>.main-nav{max-width:34%!important;gap:12px!important;padding-inline:8px!important}
+.topbar>.header-actions{max-width:23%!important}
+.hero{background-size:96% 100%!important;background-position:58% center!important;background-repeat:no-repeat!important;background-color:#21070f!important}
+@media(max-width:740px){
+ .topbar{padding-top:88px!important;min-height:150px!important;padding-bottom:8px!important}
+ .topbar>.brand{top:0!important;width:190px!important}
+ .topbar>.brand .brand-logo{height:90px!important}
+ .topbar>.main-nav{max-width:100%!important;gap:12px!important;margin-top:2px!important}
+ .topbar>.header-actions{top:12px!important;max-width:27%!important}
+ /* Keep the full banner text visible on narrow screens; avoid cover-cropping the word Max */
+ .hero{height:clamp(190px,52vw,270px)!important;background-size:100% 100%!important;background-position:center center!important}
+}
+@media(max-width:380px){
+ .topbar>.brand{width:170px!important}
+ .topbar>.brand .brand-logo{height:84px!important}
+ .topbar>.header-actions{max-width:25%!important}
+ .hero{height:190px!important}
+}
