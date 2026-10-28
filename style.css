@@ -48,3 +48,30 @@
 .floating-whatsapp svg{width:25px;height:25px;fill:#fff;flex:0 0 auto}
 .floating-whatsapp:hover{background:#0d9e4b;transform:translateY(-1px)}
 @media(max-width:700px){.hero{height:clamp(220px,48vw,330px);background-size:cover;background-position:center!important}.category-tile{background-position:left center!important}.category-tile b{max-width:62%;font-size:13px}.floating-whatsapp{inset-inline-end:12px;bottom:12px;padding:8px 12px;font-size:12px}.floating-whatsapp svg{width:23px;height:23px}}
+
+
+/* ALGABAS STORE — centered Arabic calligraphy wordmark and corrected RTL category cards */
+.topbar{position:sticky}
+.topbar>.brand{position:absolute;left:50%;right:auto;transform:translateX(-50%);z-index:2;display:flex;align-items:center;justify-content:center}
+.topbar>.brand .brand-logo{display:block;width:clamp(150px,19vw,230px);height:68px;object-fit:contain}
+.topbar>.main-nav{margin-inline-end:auto;max-width:38%;padding-inline-end:4px}
+.topbar>.header-actions{margin-inline-start:auto;max-width:25%}
+.category-tile{display:flex!important;align-items:center!important;justify-content:flex-start!important;padding-inline:18px!important}
+.category-tile b{margin-inline-start:0!important;margin-inline-end:auto!important;text-align:right!important;max-width:58%!important;direction:rtl;position:relative;z-index:2}
+.category-tile:before{background:linear-gradient(90deg,rgba(8,8,10,.02) 0%,rgba(255,255,255,.96) 52%,#fff 100%)!important}
+.hero{background-position:54% center!important}
+@media(max-width:740px){
+ .topbar{padding-top:76px!important;position:relative;min-height:128px}
+ .topbar>.brand{top:4px;left:50%;right:auto;transform:translateX(-50%)}
+ .topbar>.brand .brand-logo{width:190px;height:66px}
+ .topbar>.main-nav{max-width:100%;width:100%;margin:0;justify-content:flex-start}
+ .topbar>.header-actions{position:absolute;top:15px;right:12px;max-width:30%}
+ .hero{background-position:56% center!important}
+ .category-tile{background-position:left center!important;padding-inline:10px!important}
+ .category-tile b{max-width:59%!important;font-size:13px!important}
+}
+@media(max-width:360px){
+ .topbar>.brand .brand-logo{width:165px}
+ .topbar>.header-actions{max-width:28%}
+ .cart-button{font-size:9px!important}
+}

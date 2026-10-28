@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4df9a"/><stop offset="1" stop-color="#a97d29"/></linearGradient></defs><rect x="5" y="5" width="210" height="210" rx="42" fill="#111214" stroke="url(#g)" stroke-width="5"/><text x="110" y="125" text-anchor="middle" font-family="Arial,sans-serif" font-size="82" font-weight="900" fill="url(#g)">ج</text><path d="M35 148h150" stroke="url(#g)" stroke-width="2"/><text x="110" y="174" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" letter-spacing="1" fill="url(#g)">AL GABAS PHONE</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 220" role="img" aria-labelledby="title desc">
+<title id="title">شعار الجباس استور</title><desc id="desc">شعار ذهبي مستوحى من حرف الجيم وخط عربي أنيق، وتحته الجباس وALGABAS STORE</desc>
+<defs>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e4a6"/><stop offset=".48" stop-color="#c59a43"/><stop offset="1" stop-color="#8c641d"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+</defs>
+<g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M184 66 C214 22 300 15 337 54 C363 82 344 110 316 111 C287 112 274 91 290 74 C304 60 323 69 326 82" stroke-width="4"/>
+ <path d="M202 70 C224 45 261 37 287 49 C306 58 307 75 291 85" stroke-width="2" opacity=".75"/>
+ <path d="M260 101 C254 121 272 134 294 127 C309 123 316 111 313 99" stroke-width="4"/>
+ <path d="M306 132 C287 145 260 143 244 129" stroke-width="2.5"/>
+ <path d="M234 53 C218 66 215 83 225 97" stroke-width="2" opacity=".75"/>
+ <path d="M172 99 C194 112 210 112 226 101" stroke-width="2.5"/>
+</g>
+<text x="260" y="164" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Amiri, 'Noto Naskh Arabic', Cairo, serif" font-size="43" font-weight="600" fill="url(#gold)">الجباس</text>
+<path d="M184 176 H336" stroke="url(#gold)" stroke-width="1.3"/>
+<text x="260" y="198" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="5" fill="url(#gold)">ALGABAS STORE</text>
+</svg>
