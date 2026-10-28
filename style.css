@@ -53,25 +53,25 @@
 /* ALGABAS STORE — centered Arabic calligraphy wordmark and corrected RTL category cards */
 .topbar{position:sticky}
 .topbar>.brand{position:absolute;left:50%;right:auto;transform:translateX(-50%);z-index:2;display:flex;align-items:center;justify-content:center}
-.topbar>.brand .brand-logo{display:block;width:clamp(145px,17vw,210px);height:84px;object-fit:fill}
+.topbar>.brand .brand-logo{display:block;width:clamp(155px,16vw,200px);height:100px;object-fit:fill}
 .topbar>.main-nav{margin-inline-end:auto;max-width:38%;padding-inline-end:4px}
 .topbar>.header-actions{margin-inline-start:auto;max-width:25%}
 .category-tile{display:flex!important;align-items:center!important;justify-content:flex-start!important;padding-inline:18px!important}
 .category-tile b{margin-inline-start:0!important;margin-inline-end:auto!important;text-align:right!important;max-width:58%!important;direction:rtl;position:relative;z-index:2}
 .category-tile:before{background:linear-gradient(90deg,rgba(8,8,10,.02) 0%,rgba(255,255,255,.96) 52%,#fff 100%)!important}
-.hero{background-position:44% center!important}
+.hero{background-position:34% center!important}
 @media(max-width:740px){
- .topbar{padding-top:88px!important;position:relative;min-height:140px}
+ .topbar{padding-top:66px!important;position:relative;min-height:118px}
  .topbar>.brand{top:4px;left:50%;right:auto;transform:translateX(-50%)}
- .topbar>.brand .brand-logo{width:176px;height:78px}
+ .topbar>.brand .brand-logo{width:170px;height:94px}
  .topbar>.main-nav{max-width:100%;width:100%;margin:0;justify-content:flex-start}
  .topbar>.header-actions{position:absolute;top:15px;right:12px;max-width:30%}
- .hero{background-position:43% center!important}
+ .hero{background-position:28% center!important}
  .category-tile{background-position:left center!important;padding-inline:10px!important}
  .category-tile b{max-width:59%!important;font-size:13px!important}
 }
 @media(max-width:360px){
- .topbar>.brand .brand-logo{width:155px;height:72px}
+ .topbar>.brand .brand-logo{width:150px;height:88px}
  .topbar>.header-actions{max-width:28%}
  .cart-button{font-size:9px!important}
 }
