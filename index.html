@@ -6,13 +6,13 @@
 <title>الجباس استور | ALGABAS STORE</title>
 <meta name="description" content="الجباس استور - العياط، المتانيا أمام مسجد خاتم المرسلين">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="announcement"><span>📍 العياط – المتانيا أمام مسجد خاتم المرسلين</span><span>خدمة عملاء الجباس استور</span><a href="#" data-whatsapp>تواصل معانا على واتساب</a></div>
 <header class="topbar">
-<a class="brand" href="#"><span class="brand-text"><span class="arabic-wordmark">الجباس</span><strong>ALGABAS</strong><small>STORE</small></span></a>
+<a class="brand" href="#"><img class="brand-logo" src="logo.svg" alt="شعار الجباس استور"><span class="brand-text"><strong>ALGABAS</strong><small>STORE</small></span></a>
 <nav class="main-nav"><a href="#">الرئيسية</a><a href="#products">المنتجات</a><a href="#categories">الأقسام</a><a href="#services">الصيانة</a><a href="#contact">تواصل معنا</a></nav>
 <div class="header-actions"><button id="cart-open" class="cart-button" type="button">🛒 السلة <span id="cart-count">0</span></button><a class="whatsapp top-wa" href="#" data-whatsapp>واتساب المحل</a></div>
 </header>
@@ -24,11 +24,11 @@
 <section class="benefits"><div><b>✦ اختيارات متنوعة</b><small>أجهزة وإكسسوارات</small></div><div><b>♧ تواصل سريع</b><small>اسألنا على واتساب</small></div><div><b>⚒ صيانة موبايلات</b><small>الخدمة متوفرة بالمحل</small></div></section>
 <section class="categories" id="categories"><div class="section-title"><div><span class="eyebrow">تسوّق حسب القسم</span><h2>اختار القسم اللي يناسبك</h2></div></div>
 <div class="category-grid">
-<a class="category-tile tile-iphone" href="?section=iphone#products" data-jump-category="آيفون"><span class="tile-art tile-phone-image" aria-hidden="true"></span><b>آيفون<small>iPhone</small></b></a>
-<a class="category-tile tile-android" href="?section=android#products" data-jump-category="أندرويد"><span class="tile-art tile-phone-image" aria-hidden="true"></span><b>أندرويد<small>Samsung وغيرها</small></b></a>
-<a class="category-tile tile-accessories" href="?section=accessories#products" data-jump-category="إكسسوارات"><span class="tile-art tile-accessory-image" aria-hidden="true"></span><b>الإكسسوارات<small>AirPods وساعات ذكية</small></b></a>
-<a class="category-tile tile-offers" href="?section=offers#products" data-jump-category="عروض"><span class="tile-art tile-gift-image" aria-hidden="true"></span><b>العروض<small>أسعار مميزة</small></b></a>
-<a class="category-tile tile-new" href="?section=new#products" data-jump-category="موبايلات جديدة"><span class="tile-art tile-new-image" aria-hidden="true"></span><b>التليفونات الجديدة<small>أحدث الإصدارات</small></b></a>
+<a class="category-tile tile-iphone" href="#products" data-jump-category="آيفون"><span class="tile-art tile-phone-image" aria-hidden="true"></span><b>آيفون<small>iPhone</small></b></a>
+<a class="category-tile tile-android" href="#products" data-jump-category="أندرويد"><span class="tile-art tile-phone-image" aria-hidden="true"></span><b>أندرويد<small>Samsung وغيرها</small></b></a>
+<a class="category-tile tile-accessories" href="#products" data-jump-category="إكسسوارات"><span class="tile-art tile-accessory-image" aria-hidden="true"></span><b>الإكسسوارات<small>AirPods وساعات ذكية</small></b></a>
+<a class="category-tile tile-offers" href="#products" data-jump-category="عروض"><span class="tile-art tile-gift-image" aria-hidden="true"></span><b>العروض<small>أسعار مميزة</small></b></a>
+<a class="category-tile tile-new" href="#products" data-jump-category="موبايلات جديدة"><span class="tile-art tile-new-image" aria-hidden="true"></span><b>التليفونات الجديدة<small>أحدث الإصدارات</small></b></a>
 <a class="category-tile tile-repair" href="?section=maintenance#services" data-jump-section><span class="tile-art">⚒</span><b>الصيانة<small>خدمة داخل المحل</small></b></a>
 </div></section>
 <section class="products-section" id="products"><div class="section-heading"><div><span class="eyebrow">اختيارات الجباس استور</span><h2>المنتجات المتاحة</h2></div><span id="product-count" class="count">جاري تحميل المنتجات…</span></div>
@@ -41,7 +41,10 @@
 </main>
 <section id="product-page" class="product-page" hidden></section>
 <div id="cart-panel" class="cart-panel" hidden aria-live="polite"><div class="cart-head"><h2>سلة المشتريات</h2><button id="cart-close" type="button" aria-label="إغلاق">×</button></div><div id="cart-items"></div><div class="cart-total" id="cart-total"></div><button id="checkout" class="btn primary" type="button">إتمام الطلب عبر واتساب</button></div><div id="cart-shade" class="cart-shade" hidden></div>
-<footer><a class="brand" href="#"><span class="brand-text"><span class="arabic-wordmark">الجباس</span><strong>ALGABAS</strong><small>STORE</small></span></a><p>الأسعار والتوافر حسب المنتجات المسجلة بالمحل. يُرجى التواصل للتأكيد.</p><span>© <span id="year"></span> الجباس استور</span></footer>
+<a class="floating-whatsapp" href="#" data-whatsapp aria-label="تواصل معنا على واتساب">
+<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3.2A12.4 12.4 0 0 0 5.4 22.1L3.7 28.3l6.4-1.7A12.4 12.4 0 1 0 16 3.2Zm0 22.4a10 10 0 0 1-5.1-1.4l-.4-.2-3.8 1 1-3.7-.3-.4A10 10 0 1 1 16 25.6Zm5.5-7.5c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6c.2-.2.2-.4.3-.6s0-.4 0-.6-.7-1.7-1-2.3-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4s-1.2 1.2-1.2 2.8 1.2 3.2 1.4 3.4a12 12 0 0 0 4.6 4.1c.6.3 1.1.5 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.8-.7 2-1.4s.3-1.3.2-1.4-.3-.2-.6-.4Z"/></svg>
+<span>تواصل واتساب</span></a>
+<footer><a class="brand" href="#"><img class="brand-logo" src="logo.svg" alt="شعار الجباس استور"><span class="brand-text"><strong>ALGABAS</strong><small>STORE</small></span></a><p>الأسعار والتوافر حسب المنتجات المسجلة بالمحل. يُرجى التواصل للتأكيد.</p><span>© <span id="year"></span> الجباس استور</span></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script>
 
 </body></html>

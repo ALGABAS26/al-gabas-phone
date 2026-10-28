@@ -30,17 +30,21 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 \n/* ALGABAS STORE branding */\n.brand-text strong{font-family:system-ui,sans-serif;font-size:18px;letter-spacing:1.4px;font-weight:800}\n.brand-text small{font-family:system-ui,sans-serif;font-size:9px;letter-spacing:4px}\n.hero-visual .hero-caption{color:#191821}\n
 
-/* ALGABAS STORE brand refinement and root-level image paths */
-.brand{gap:10px}
-.brand-logo{display:none}
-.brand-text{display:flex;flex-direction:column;align-items:center;gap:0;min-width:118px}
-.brand-text .arabic-wordmark{display:block;font-family:'Aref Ruqaa','Amiri','Noto Naskh Arabic',serif;font-size:clamp(25px,3vw,34px);font-weight:400;line-height:1.05;letter-spacing:.3px;color:#111c2d;white-space:nowrap;text-shadow:0 .2px 0 currentColor}
-.brand-text strong{font-family:Arial,system-ui,sans-serif;font-size:12px;font-weight:500;letter-spacing:4px;line-height:1.25;color:#9b762d}
-.brand-text small{font-size:8px;font-weight:600;letter-spacing:4px;color:#9b762d}
-footer .brand-text .arabic-wordmark{color:#fff}
-footer .brand-text strong{color:#e0c27a}
-.category-tile{background-position:center;background-size:cover;background-repeat:no-repeat}
-.category-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.93) 60%);pointer-events:none;z-index:0}
-.category-tile.tile-offers:before{background:linear-gradient(90deg,rgba(255,244,236,.05),rgba(255,244,236,.94) 60%)}
-.category-tile b{z-index:1}
-@media(max-width:740px){.brand-text{min-width:100px}.brand-text .arabic-wordmark{font-size:27px}.brand-text strong{font-size:10px;letter-spacing:3px}.brand-text small{font-size:7px;letter-spacing:3px}}
+
+/* October 2026 visual update: burgundy flagship offer, compact cart, floating WhatsApp */
+:root{--burgundy:#8e1838;--burgundy-dark:#21070f;--wa-green:#16b85b}
+.hero{display:block;width:100%;max-width:1536px;min-height:0;height:clamp(260px,35.35vw,545px);background:#21070f url('./home-hero.jpg') center/100% 100% no-repeat;}
+.hero-copy,.hero-visual{display:none!important}
+/* Category cards keep the product photo on the left and readable labels on the white right side */
+.category-tile{background-position:left center!important;background-size:auto 100%!important;background-repeat:no-repeat!important;padding-inline:16px 18px!important;justify-content:flex-start!important}
+.category-tile:before{background:linear-gradient(90deg,rgba(8,8,10,.02) 0%,rgba(255,255,255,.97) 57%,#fff 100%)!important}
+.category-tile b{margin-inline-start:auto!important;margin-inline-end:0!important;text-align:right;background:rgba(255,255,255,.94)!important;color:#17171b!important;max-width:58%;}
+.category-tile small{color:#555!important}
+.cart-button{padding:6px 9px!important;font-size:10px!important;border-radius:17px!important;line-height:1.2}
+.cart-button span{min-width:16px!important;height:16px!important;font-size:9px!important;margin-inline-start:2px!important}
+.header-actions{gap:5px!important}
+.top-wa,.announcement a[data-whatsapp]{display:none!important}
+.floating-whatsapp{position:fixed;z-index:30;inset-inline-end:18px;bottom:18px;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:var(--wa-green);color:#fff;box-shadow:0 8px 24px #087b3d44;font-size:13px;font-weight:900;direction:rtl;}
+.floating-whatsapp svg{width:25px;height:25px;fill:#fff;flex:0 0 auto}
+.floating-whatsapp:hover{background:#0d9e4b;transform:translateY(-1px)}
+@media(max-width:700px){.hero{height:clamp(220px,48vw,330px);background-size:cover;background-position:center!important}.category-tile{background-position:left center!important}.category-tile b{max-width:62%;font-size:13px}.floating-whatsapp{inset-inline-end:12px;bottom:12px;padding:8px 12px;font-size:12px}.floating-whatsapp svg{width:23px;height:23px}}
