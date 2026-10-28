@@ -8,18 +8,18 @@
 /* Reference-derived category imagery: crops from the user's supplied design board */
 .category-tile{position:relative;overflow:hidden;background-color:#fff;background-repeat:no-repeat;background-position:left center;background-size:auto 100%;}
 .category-tile .tile-art{display:none!important}
-.category-tile.tile-iphone{background-image:url('assets/iphone-category.jpg');}
-.category-tile.tile-android{background-image:url('assets/android-category.jpg');}
-.category-tile.tile-accessories{background-image:url('assets/accessories-category.jpg');}
-.category-tile.tile-offers{background-image:url('assets/offers-category.jpg');background-color:#fff0e8;}
-.category-tile.tile-new{background-image:url('assets/new-category.jpg');}
-.category-tile.tile-repair{background-image:url('assets/maintenance-category.jpg');}
+.category-tile.tile-iphone{background-image:url('./iphone-category.jpg');}
+.category-tile.tile-android{background-image:url('./android-category.jpg');}
+.category-tile.tile-accessories{background-image:url('./accessories-category.jpg');}
+.category-tile.tile-offers{background-image:url('./offers-category.jpg');background-color:#fff0e8;}
+.category-tile.tile-new{background-image:url('./new-category.jpg');}
+.category-tile.tile-repair{background-image:url('./maintenance-category.jpg');}
 .category-tile b{position:relative;z-index:1;background:rgba(255,255,255,.90);border-radius:8px;padding:6px 9px;}
 .category-tile.tile-offers b{background:rgba(255,245,238,.92);color:#a51f26}
 @media(max-width:700px){.category-tile{background-size:auto 100%;background-position:left center}.category-tile b{max-width:70%;}}
 
 /* Final reference-image pass */
-.hero-visual.reference-hero{background:#071629 url('assets/home-hero.jpg') center/cover no-repeat;min-height:310px}
+.hero-visual.reference-hero{background:#071629 url('./home-hero.jpg') center/cover no-repeat;min-height:310px}
 .category-tile{background-position:center;background-size:cover;background-repeat:no-repeat}
 .category-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,18,34,.08),rgba(255,255,255,.9) 58%);pointer-events:none}
 .category-tile b{z-index:1;margin-inline-start:auto;background:rgba(255,255,255,.88);padding:8px 10px;border-radius:10px}
@@ -29,3 +29,18 @@
 @media(max-width:700px){.hero{grid-template-columns:1fr}.hero-visual.reference-hero{min-height:250px;background-position:center}.category-tile{min-height:110px}}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 \n/* ALGABAS STORE branding */\n.brand-text strong{font-family:system-ui,sans-serif;font-size:18px;letter-spacing:1.4px;font-weight:800}\n.brand-text small{font-family:system-ui,sans-serif;font-size:9px;letter-spacing:4px}\n.hero-visual .hero-caption{color:#191821}\n
+
+/* ALGABAS STORE brand refinement and root-level image paths */
+.brand{gap:10px}
+.brand-logo{display:none}
+.brand-text{display:flex;flex-direction:column;align-items:center;gap:0;min-width:118px}
+.brand-text .arabic-wordmark{display:block;font-family:'Aref Ruqaa','Amiri','Noto Naskh Arabic',serif;font-size:clamp(25px,3vw,34px);font-weight:400;line-height:1.05;letter-spacing:.3px;color:#111c2d;white-space:nowrap;text-shadow:0 .2px 0 currentColor}
+.brand-text strong{font-family:Arial,system-ui,sans-serif;font-size:12px;font-weight:500;letter-spacing:4px;line-height:1.25;color:#9b762d}
+.brand-text small{font-size:8px;font-weight:600;letter-spacing:4px;color:#9b762d}
+footer .brand-text .arabic-wordmark{color:#fff}
+footer .brand-text strong{color:#e0c27a}
+.category-tile{background-position:center;background-size:cover;background-repeat:no-repeat}
+.category-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.93) 60%);pointer-events:none;z-index:0}
+.category-tile.tile-offers:before{background:linear-gradient(90deg,rgba(255,244,236,.05),rgba(255,244,236,.94) 60%)}
+.category-tile b{z-index:1}
+@media(max-width:740px){.brand-text{min-width:100px}.brand-text .arabic-wordmark{font-size:27px}.brand-text strong{font-size:10px;letter-spacing:3px}.brand-text small{font-size:7px;letter-spacing:3px}}

@@ -2,6 +2,9 @@
 const SHOP_PHONE="201110103452", $=s=>document.querySelector(s);
 const grid=$("#product-grid"), status=$("#status"), count=$("#product-count");
 let products=[], selectedCategory="الكل";
+const sectionToCategory={iphone:"آيفون",android:"أندرويد",accessories:"إكسسوارات",offers:"عروض",new:"موبايلات جديدة"};
+const initialSection=new URLSearchParams(location.search).get("section");
+if(sectionToCategory[initialSection]) selectedCategory=sectionToCategory[initialSection];
 let cart=[];
 try { const saved=JSON.parse(localStorage.getItem("algabas_cart")||"[]"); cart=Array.isArray(saved)?saved.filter(x=>x&&x.id!==undefined&&Number(x.qty)>0).map(x=>({id:x.id,qty:Math.floor(Number(x.qty))})):[]; } catch { cart=[]; }
 $("#year").textContent=new Date().getFullYear();
@@ -12,7 +15,7 @@ document.querySelectorAll("[data-whatsapp]").forEach(a=>{a.href=wa("السلام
 function categoryMatch(p){
  const hay=[p.name,p.category,p.description,p.specs,p.condition,p.brand,p.model].filter(Boolean).join(" ").toLocaleLowerCase("ar");
  const cat=String(p.category||"").toLocaleLowerCase("ar");
- const isAccessory=/إكسسوار|اكسسوار|accessor|جراب|شاحن|سماعة|ساعة ذكية|كابل/i.test(hay);
+ const isAccessory=/إكسسوار|اكسسوار|accessor|جراب|case|شاحن|charger|سماعة|headphone|earbud|ساعة ذكية|smart ?watch|كابل|cable|power ?bank/i.test(hay);
  const isIphone=/iphone|آيفون|ايفون|apple|ابل|أبل/i.test(hay);
  const isAndroid=/android|أندرويد|اندرويد|samsung|سامسونج|xiaomi|شاومي|redmi|ريدمي|oppo|أوبو|vivo|فيفو|realme|ريلمي|huawei|هواوي|honor|هونر|infinix|انفنكس|tecno|تكنو|oneplus/i.test(hay);
  if(selectedCategory==="آيفون") return isIphone && !isAccessory;
@@ -55,10 +58,11 @@ function openCart(){ $("#cart-panel").hidden=false;$("#cart-shade").hidden=false
 function closeCart(){$("#cart-panel").hidden=true;$("#cart-shade").hidden=true;}
 $("#cart-open").onclick=openCart;$("#cart-close").onclick=closeCart;$("#cart-shade").onclick=closeCart;
 $("#checkout").onclick=()=>{if(!cart.length){renderCart();return;}let lines=["السلام عليكم، عايز أطلب المنتجات دي من الجباس استور:"];let total=0;cart.forEach(c=>{const p=products.find(x=>String(x.id)===String(c.id));if(p){lines.push(`- ${p.name} | الكمية: ${c.qty} | السعر: ${p.price} جنيه`);total+=Number(p.price||0)*c.qty;}});lines.push(`الإجمالي: ${total} جنيه`);window.open(wa(lines.join("\n")),"_blank","noopener");};
-document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedCategory=b.dataset.category;render();}));
-document.querySelectorAll("[data-jump-category]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();selectedCategory=a.dataset.jumpCategory;document.querySelectorAll(".cat").forEach(b=>{b.classList.toggle("active",b.dataset.category===selectedCategory);});$("#search").value="";render();$("#products").scrollIntoView({behavior:"smooth"});}));
+document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedCategory=b.dataset.category;const key=Object.keys(sectionToCategory).find(k=>sectionToCategory[k]===selectedCategory);const url=new URL(location.href);if(key)url.searchParams.set("section",key);else url.searchParams.delete("section");history.replaceState(null,"",url.pathname+url.search+"#products");render();}));
+document.querySelectorAll("[data-jump-category]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();selectedCategory=a.dataset.jumpCategory;document.querySelectorAll(".cat").forEach(b=>{b.classList.toggle("active",b.dataset.category===selectedCategory);});$("#search").value="";const key=Object.keys(sectionToCategory).find(k=>sectionToCategory[k]===selectedCategory);const url=new URL(location.href);if(key)url.searchParams.set("section",key);history.pushState(null,"",url.pathname+url.search+"#products");render();$("#products").scrollIntoView({behavior:"smooth"});}));
+window.addEventListener("popstate",()=>{const key=new URLSearchParams(location.search).get("section");selectedCategory=sectionToCategory[key]||"الكل";document.querySelectorAll(".cat").forEach(b=>b.classList.toggle("active",b.dataset.category===selectedCategory));render();});
 $("#search").addEventListener("input",render);$("#sort").addEventListener("change",render);
-async function init(){if(!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){status.hidden=false;status.textContent="إعدادات الاتصال بقاعدة البيانات غير موجودة في config.js.";return;}if(!window.supabase?.createClient){status.hidden=false;status.textContent="تعذر تحميل مكتبة الاتصال. اتأكد من الإنترنت ثم أعد تحميل الصفحة.";return;}try{const client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const {data,error}=await client.from("products").select("id,name,category,price,old_price,quantity,specs,condition,image,badge,description,created_at").order("created_at",{ascending:false});if(error)throw error;products=data||[];cart=cart.filter(c=>products.some(p=>String(p.id)===String(c.id)));saveCart();render();renderCart();const hash=location.hash.match(/^#product-(.+)$/);if(hash){const id=decodeURIComponent(hash[1]);if(products.some(p=>String(p.id)===id))showProduct(id);}}catch(err){status.hidden=false;status.textContent=`تعذر تحميل المنتجات من Supabase: ${err.message||"خطأ غير معروف"}`;}}
+async function init(){document.querySelectorAll(".cat").forEach(b=>b.classList.toggle("active",b.dataset.category===selectedCategory));if(!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){status.hidden=false;status.textContent="إعدادات الاتصال بقاعدة البيانات غير موجودة في config.js.";return;}if(!window.supabase?.createClient){status.hidden=false;status.textContent="تعذر تحميل مكتبة الاتصال. اتأكد من الإنترنت ثم أعد تحميل الصفحة.";return;}try{const client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const {data,error}=await client.from("products").select("id,name,category,price,old_price,quantity,specs,condition,image,badge,description,created_at").order("created_at",{ascending:false});if(error)throw error;products=data||[];cart=cart.filter(c=>products.some(p=>String(p.id)===String(c.id)));saveCart();render();renderCart();const hash=location.hash.match(/^#product-(.+)$/);if(hash){const id=decodeURIComponent(hash[1]);if(products.some(p=>String(p.id)===id))showProduct(id);}}catch(err){status.hidden=false;status.textContent=`تعذر تحميل المنتجات من Supabase: ${err.message||"خطأ غير معروف"}`;}}
 init();
 })();
  
