@@ -1,47 +1,285 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071629">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101318">
 <title>الجباس فون | AL GABAS PHONE</title>
-<meta name="description" content="الجباس فون - المتانية، مركز العياط">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="announcement"><span>📍 المتانية – مركز العياط</span><span>خدمة عملاء الجباس فون</span><a href="#" data-whatsapp>تواصل معانا على واتساب</a></div>
+
+<!-- شريط الإعلان العلوي -->
+<div class="announcement">
+  <span>📍 المتانيا – مركز العياط</span>
+  <span>خدمة عملاء الجباس فون</span>
+  <a href="#" data-whatsapp>تواصل معنا على واتساب</a>
+</div>
+
+<!-- الهيدر الرئيسي والشعار -->
 <header class="topbar">
-<a class="brand" href="#"><img class="brand-logo" src="logo.svg" alt="شعار الجباس فون"><span class="brand-text"><strong>AL GABAS</strong><small>PHONE</small></span></a>
-<nav class="main-nav"><a href="#">الرئيسية</a><a href="#products">المنتجات</a><a href="#categories">الأقسام</a><a href="#services">الصيانة</a><a href="#contact">تواصل معنا</a></nav>
-<div class="header-actions"><button id="cart-open" class="cart-button" type="button">🛒 السلة <span id="cart-count">0</span></button><a class="whatsapp top-wa" href="#" data-whatsapp>واتساب المحل</a></div>
+  <a class="brand" href="#" data-target="home">
+    <img class="brand-logo" src="logo.svg" alt="شعار الجباس فون">
+    <span class="brand-text"><strong>AL GABAS PHONE</strong><small>PHONE</small></span>
+  </a>
+  <nav class="main-nav">
+    <a href="#" class="nav-link active" data-target="home">الرئيسية</a>
+    <a href="#" class="nav-link" data-target="categories-page">الأقسام</a>
+    <a href="#" class="nav-link" data-target="offers-page">العروض</a>
+    <a href="#" class="nav-link" data-target="maintenance-page">الصيانة</a>
+    <a href="#" class="nav-link" data-target="contact-page">تواصل معنا</a>
+  </nav>
+  <div class="header-actions">
+    <button class="cart-btn" id="open-cart-btn" aria-label="سلة المشتريات">
+      🛒 <span class="cart-badge" id="cart-count">0</span>
+    </button>
+    <a class="whatsapp top-wa" href="#" data-whatsapp>واتساب</a>
+  </div>
 </header>
-<main>
-<section class="hero" id="home">
-<div class="hero-copy"><span class="eyebrow">عرض مميز من الجباس فون</span><h1>iPhone 18 Pro Max<br><em>اللون البرجاندي</em></h1><p>اختار موبايلك من الجباس فون — أجهزة وإكسسوارات وعروض حسب المتاح.</p><div class="offer-price">99,999 <small>جنيه</small></div><div class="hero-actions"><a class="btn primary" href="#products">تسوّق الآن ←</a><a class="btn outline" href="#" data-whatsapp>اسألنا على واتساب</a></div></div>
-<div class="hero-visual"><div class="phone-art"><span class="camera c1"></span><span class="camera c2"></span><span class="camera c3"></span><span class="apple-mark">●</span></div><div class="hero-caption"><small>AL GABAS PHONE</small><strong>اختيارك الأفضل دايمًا</strong></div></div>
-</section>
-<section class="benefits"><div><b>✦ اختيارات متنوعة</b><small>أجهزة وإكسسوارات</small></div><div><b>♧ تواصل سريع</b><small>اسألنا على واتساب</small></div><div><b>⚒ صيانة موبايلات</b><small>الخدمة متوفرة بالمحل</small></div></section>
-<section class="categories" id="categories"><div class="section-title"><div><span class="eyebrow">تسوّق حسب القسم</span><h2>اختار القسم اللي يناسبك</h2></div></div>
-<div class="category-grid">
-<a class="category-tile tile-iphone" href="#products" data-jump-category="موبايلات جديدة"><span class="tile-art tile-phone-image" aria-hidden="true">📱</span><b>آيفون<small>iPhone</small></b></a>
-<a class="category-tile tile-android" href="#products" data-jump-category="موبايلات جديدة"><span class="tile-art tile-phone-image" aria-hidden="true">📱</span><b>أندرويد<small>Samsung وغيرها</small></b></a>
-<a class="category-tile tile-accessories" href="#products" data-jump-category="إكسسوارات"><span class="tile-art tile-accessory-image" aria-hidden="true">⌚</span><b>الإكسسوارات<small>AirPods وساعات ذكية</small></b></a>
-<a class="category-tile tile-offers" href="#products" data-jump-category="عروض"><span class="tile-art tile-gift-image" aria-hidden="true">🎁</span><b>العروض<small>أسعار مميزة</small></b></a>
-<a class="category-tile tile-new" href="#products" data-jump-category="موبايلات جديدة"><span class="tile-art tile-new-image" aria-hidden="true">📱</span><b>التليفونات الجديدة<small>أحدث الإصدارات</small></b></a>
-<a class="category-tile tile-repair" href="#services"><span class="tile-art">⚒</span><b>الصيانة<small>خدمة داخل المحل</small></b></a>
-</div></section>
-<section class="products-section" id="products"><div class="section-heading"><div><span class="eyebrow">اختيارات الجباس فون</span><h2>المنتجات المتاحة</h2></div><span id="product-count" class="count">جاري تحميل المنتجات…</span></div>
-<div class="toolbar"><input id="search" type="search" placeholder="دور على موبايل أو إكسسوار…" aria-label="بحث عن منتج"><select id="sort" aria-label="ترتيب المنتجات"><option value="newest">الأحدث</option><option value="price-asc">السعر: من الأقل للأعلى</option><option value="price-desc">السعر: من الأعلى للأقل</option></select></div>
-<div class="quick-cats"><button class="cat active" data-category="الكل">كل المنتجات</button><button class="cat" data-category="موبايلات جديدة">جديد</button><button class="cat" data-category="إكسسوارات">إكسسوارات</button><button class="cat" data-category="عروض">العروض</button></div>
-<div id="status" class="status">جاري الاتصال بقاعدة البيانات…</div><div id="product-grid" class="product-grid"></div>
-</section>
-<section class="services" id="services"><div class="service-main"><span>⚒</span><h3>صيانة الموبايلات</h3><p>هذه الخدمة متوفرة بالمحل وستتوفر صور بالموقع قريبا</p><a href="#" data-whatsapp>استفسر عن الصيانة ←</a></div><div><span>♫</span><h3>الإكسسوارات</h3><p>AirPods وساعات ذكية وشواحن وجرابات حسب المتاح.</p><a href="#" data-whatsapp>اسأل عن المتاح ←</a></div><div><span>☏</span><h3>مساعدة قبل الشراء</h3><p>ابعتلنا ميزانيتك واحتياجك ونساعدك تختار.</p><a href="#" data-whatsapp>تواصل معانا ←</a></div></section>
-<section class="contact" id="contact"><div><span class="eyebrow">زورنا أو تواصل معانا</span><h2>الجباس فون أقرب ليك</h2><p>مركز العياط، قرية المتانية، أمام مسجد خاتم المرسلين، محل الجباس فون.</p></div><a class="btn primary" href="#" data-whatsapp>تواصل عبر واتساب</a></section>
+
+<main class="main-container">
+
+  <!-- ================= 1. الصفحة الرئيسية (Home) ================= -->
+  <section class="page-view active-view" id="home-view">
+    <!-- الهوك الرئيسي: آيفون 18 بروماكس بتدرج الألوان المعتمد -->
+    <div class="hero-hook">
+      <div class="hero-content">
+        <span class="badge-tag">عرض مميز</span>
+        <h1>iPhone 18 Pro Max</h1>
+        <p>الأقوى .. والأجمل</p>
+        <div class="hero-price">99,999 <span>جنيه</span></div>
+      </div>
+      <div class="hero-image-wrap">
+        <div class="phone-mockup-burgundy"></div>
+      </div>
+      <div class="dots-indicator">
+        <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+    </div>
+
+    <!-- الأقسام بالطول (مطابقة للصورة الثانية تماماً) -->
+    <div class="vertical-sections-list">
+      <div class="v-section-card" data-category="موبايلات جديدة">
+        <div class="v-card-info">
+          <h3>آيفون</h3>
+          <p>iPhone 18 Max</p>
+        </div>
+        <button class="browse-btn">تصفح الآن</button>
+      </div>
+
+      <div class="v-section-card" data-category="أندرويد">
+        <div class="v-card-info">
+          <h3>أندرويد</h3>
+          <p>Samsung S26 Ultra</p>
+        </div>
+        <button class="browse-btn">تصفح الآن</button>
+      </div>
+
+      <div class="v-section-card" data-category="إكسسوارات">
+        <div class="v-card-info">
+          <h3>الإكسسوارات</h3>
+          <p>AirPods • ساعات ذكية Ai</p>
+        </div>
+        <button class="browse-btn">تصفح الآن</button>
+      </div>
+
+      <div class="v-section-card" data-category="موبايلات جديدة">
+        <div class="v-card-info">
+          <h3>التليفونات الجديدة</h3>
+          <p>أحدث الإصدارات</p>
+        </div>
+        <button class="browse-btn">تصفح الآن</button>
+      </div>
+
+      <div class="v-section-card special-offer-card" data-target="offers-page">
+        <div class="v-card-info">
+          <h3>العروض</h3>
+          <p>خصومات مميزة لفترة محدودة</p>
+        </div>
+        <div class="gift-box-icon">🎁</div>
+        <button class="browse-btn">تصفح الآن</button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= 2. صفحة الأقسام / المنتجات العامة ================= -->
+  <section class="page-view" id="categories-page-view">
+    <div class="section-header-title">
+      <span class="eyebrow">تسوّق حسب الاحتياج</span>
+      <h2>أقسام المنتجات</h2>
+    </div>
+    <div class="filter-tabs">
+      <button class="cat-pill active" data-category="الكل">الكل</button>
+      <button class="cat-pill" data-category="أندرويد">أندرويد</button>
+      <button class="cat-pill" data-category="موبايلات جديدة">آيفون</button>
+      <button class="cat-pill" data-category="إكسسوارات">إكسسوارات</button>
+    </div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="ابحث عن منتج...">
+      <select id="sort">
+        <option value="newest">الأحدث</option>
+        <option value="price-asc">السعر: من الأقل للأعلى</option>
+        <option value="price-desc">السعر: من الأعلى للأقل</option>
+      </select>
+    </div>
+    <div id="product-grid" class="product-grid"></div>
+    <div id="status" class="status-msg hidden">جاري التحميل...</div>
+  </section>
+
+
+  <!-- ================= 3. صفحة تفاصيل المنتج الكاملة (بدون فقاعة زوم) ================= -->
+  <section class="page-view" id="product-detail-view">
+    <button class="back-to-home-btn" id="back-from-detail">← العودة للخلف</button>
+    <div class="detail-container" id="product-detail-content">
+      <!-- يتم حقن التفاصيل هنا برمجياً -->
+    </div>
+  </section>
+
+
+  <!-- ================= 4. صفحة الإكسسوارات الثابتة ================= -->
+  <section class="page-view" id="accessories-page-view">
+    <div class="static-banner accessories-banner">
+      <div class="banner-text">
+        <span class="tag-red">كل ما تحتاجه لهاتفك</span>
+        <h2>الإكسسوارات</h2>
+      </div>
+      <div class="banner-img-preview">🎧 ⌚</div>
+    </div>
+    <div class="sub-filter-pills">
+      <button class="sub-pill active">سماعات</button>
+      <button class="sub-pill">ساعات ذكية</button>
+      <button class="sub-pill">شواحن</button>
+      <button class="sub-pill">كفرات</button>
+    </div>
+    <div id="accessories-grid" class="product-grid">
+      <!-- حالة عدم وجود منتجات -->
+      <div class="empty-state-notice">لا توجد منتجات حالياً في هذا القسم. سيتم إضافتها قريباً.</div>
+    </div>
+  </section>
+
+
+  <!-- ================= 5. صفحة العروض الثابتة ================= -->
+  <section class="page-view" id="offers-page-view">
+    <div class="static-banner offers-banner-bg">
+      <div class="banner-text">
+        <span class="tag-red">أسعار مميزة لفترة محدودة</span>
+        <h2>العروض</h2>
+      </div>
+      <div class="offer-graphic-badge">٪</div>
+    </div>
+    <div class="filter-tabs small-tabs">
+      <button class="cat-pill active">الكل</button>
+      <button class="cat-pill">أندرويد</button>
+      <button class="cat-pill">آيفون</button>
+      <button class="cat-pill">إكسسوارات</button>
+    </div>
+    <div id="offers-grid" class="product-grid">
+      <div class="empty-state-notice">لا توجد عروض نشطة حالياً. تتابع معنا قريباً.</div>
+    </div>
+  </section>
+
+
+  <!-- ================= 6. صفحة الصيانة الثابتة ================= -->
+  <section class="page-view" id="maintenance-page-view">
+    <div class="maintenance-header-box">
+      <div class="maint-icon-tools">🛠️ 📱</div>
+      <h2>الصيانة</h2>
+      <p>خدمة صيانة احترافية</p>
+    </div>
+    <div class="maintenance-notice-card">
+      <div class="info-circle-big">ℹ️</div>
+      <p><b>هذه الخدمة متوفرة بالمحل، وستتوفر صور بالموقع قريباً.</b></p>
+    </div>
+    <div class="maintenance-services-grid">
+      <div class="maint-card"><span>🔋</span><b>تغيير بطاريات</b></div>
+      <div class="maint-card"><span>🖥️</span><b>صيانة شاشات</b></div>
+      <div class="maint-card"><span>🔍</span><b>فحص شامل</b></div>
+      <div class="maint-card"><span>⚙️</span><b>حل مشاكل البرمجيات</b></div>
+    </div>
+  </section>
+
+
+  <!-- ================= 7. صفحة التليفونات الجديدة ================= -->
+  <section class="page-view" id="new-phones-page-view">
+    <div class="static-banner new-phones-banner">
+      <div class="banner-text">
+        <span class="tag-gold">NEW</span>
+        <h2>التليفونات الجديدة</h2>
+        <p>أحدث الإصدارات بضمان رسمي</p>
+      </div>
+      <div class="banner-phones-preview">📱📱</div>
+    </div>
+    <div id="new-phones-grid" class="product-grid">
+      <div class="empty-state-notice">لا توجد هواتف جديدة مضافة في القائمة حالياً.</div>
+    </div>
+  </section>
+
 </main>
-<section id="product-page" class="product-page" hidden></section>
-<div id="cart-panel" class="cart-panel" hidden aria-live="polite"><div class="cart-head"><h2>سلة المشتريات</h2><button id="cart-close" type="button" aria-label="إغلاق">×</button></div><div id="cart-items"></div><div class="cart-total" id="cart-total"></div><button id="checkout" class="btn primary" type="button">إتمام الطلب عبر واتساب</button></div><div id="cart-shade" class="cart-shade" hidden></div>
-<footer><a class="brand" href="#"><img class="brand-logo" src="logo.svg" alt="شعار الجباس فون"><span class="brand-text"><strong>AL GABAS</strong><small>PHONE</small></span></a><p>الأسعار والتوافر حسب المنتجات المسجلة بالمحل. يُرجى التواصل للتأكيد.</p><span>© <span id="year"></span> الجباس فون</span></footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script>
-<script>document.querySelectorAll('[data-jump-category]').forEach(function(a){a.addEventListener('click',function(){var cat=a.getAttribute('data-jump-category');var b=document.querySelector('.cat[data-category="'+cat+'"]');if(b)setTimeout(function(){b.click()},100)})})</script>
-</body></html>
+
+<!-- شريط التنقل السفلي الثابت (Bottom Navigation Bar) -->
+<nav class="bottom-nav">
+  <button class="b-nav-item active" data-target="home">
+    <span class="b-icon">🏠</span>
+    <span>الرئيسية</span>
+  </button>
+  <button class="b-nav-item" data-target="categories-page">
+    <span class="b-icon">🗂️</span>
+    <span>الأقسام</span>
+  </button>
+  <button class="b-nav-item" data-target="offers-page">
+    <span class="b-icon">🏷️</span>
+    <span>العروض</span>
+  </button>
+  <button class="b-nav-item" data-target="contact-page">
+    <span class="b-icon">📞</span>
+    <span>تواصل معنا</span>
+  </button>
+</nav>
+
+<!-- نافذة سلة المشتريات الجانبية (Cart Drawer) -->
+<div class="cart-overlay" id="cart-overlay">
+  <div class="cart-drawer">
+    <div class="cart-drawer-header">
+      <h3>سلة المشتريات</h3>
+      <button class="close-cart" id="close-cart-btn">✕</button>
+    </div>
+    <div class="cart-items-container" id="cart-items-list">
+      <!-- يتم ملء المنتجات المضافة هنا -->
+    </div>
+    <div class="cart-drawer-footer">
+      <div class="cart-total-row">
+        <span>الإجمالي:</span>
+        <strong id="cart-total-price">0 ج.م</strong>
+      </div>
+      <button class="btn primary checkout-btn" id="checkout-whatsapp-btn">إتمام الطلب عبر واتساب</button>
+    </div>
+  </div>
+</div>
+
+<!-- التذييل الثابت (Footer) -->
+<footer class="site-footer">
+  <div class="brand footer-brand">
+    <img class="brand-logo" src="logo.svg" alt="شعار">
+    <span class="brand-text"><strong>الجباس فون</strong><small>اختيارك الأفضل ... دائماً</small></span>
+  </div>
+  <div class="footer-badges-bar">
+    <div><span>📦</span><b>شحن سريع</b><small>لكل أنحاء الجمهورية</small></div>
+    <div><span>🎧</span><b>دعم فني</b><small>خدمة عملاء متميزة</small></div>
+    <div><span>⭐</span><b>أسعار مميزة</b><small>أفضل الأسعار في مصر</small></div>
+  </div>
+  <div class="copyright-row">
+    <span>جميع الحقوق محفوظة © 2026 - الجباس فون</span>
+    <a href="#" class="back-to-top">العودة إلى الأعلى ↑</a>
+  </div>
+</footer>
+
+<!-- سكربت الاتصال بقاعدة البيانات والتحكم -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+          </html>
+      
