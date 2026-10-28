@@ -98,3 +98,15 @@
  .topbar>.header-actions{max-width:25%!important}
  .hero{height:190px!important}
 }
+
+/* Uploaded ALGABAS logo — preserve full emblem and wordmark */
+.topbar{min-height:176px!important;align-items:center!important}
+.topbar>.brand{width:112px!important;justify-content:center!important}
+.topbar>.brand .brand-logo{width:108px!important;height:164px!important;object-fit:contain!important}
+footer .brand-logo{width:70px!important;height:105px!important;object-fit:contain!important}
+@media(max-width:740px){
+ .topbar{padding-top:150px!important;min-height:205px!important;padding-bottom:8px!important}
+ .topbar>.brand{top:0!important;width:100px!important}
+ .topbar>.brand .brand-logo{width:96px!important;height:145px!important;object-fit:contain!important}
+ .topbar>.main-nav{margin-top:0!important}
+}
