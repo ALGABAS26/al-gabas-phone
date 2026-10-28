@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 220" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 250" role="img" aria-labelledby="title desc">
 <title id="title">شعار الجباس استور</title><desc id="desc">شعار ذهبي مستوحى من حرف الجيم وخط عربي أنيق، وتحته الجباس وALGABAS STORE</desc>
 <defs>
  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e4a6"/><stop offset=".48" stop-color="#c59a43"/><stop offset="1" stop-color="#8c641d"/></linearGradient>
@@ -12,7 +12,7 @@
  <path d="M234 53 C218 66 215 83 225 97" stroke-width="2" opacity=".75"/>
  <path d="M172 99 C194 112 210 112 226 101" stroke-width="2.5"/>
 </g>
-<text x="260" y="164" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Amiri, 'Noto Naskh Arabic', Cairo, serif" font-size="43" font-weight="600" fill="url(#gold)">الجباس</text>
-<path d="M184 176 H336" stroke="url(#gold)" stroke-width="1.3"/>
-<text x="260" y="198" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="5" fill="url(#gold)">ALGABAS STORE</text>
+<text x="260" y="177" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Amiri, 'Noto Naskh Arabic', Cairo, serif" font-size="43" font-weight="600" fill="url(#gold)">الجباس</text>
+<path d="M184 190 H336" stroke="url(#gold)" stroke-width="1.3"/>
+<text x="260" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="5" fill="url(#gold)">ALGABAS STORE</text>
 </svg>
