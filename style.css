@@ -110,3 +110,9 @@ footer .brand-logo{width:70px!important;height:105px!important;object-fit:contai
  .topbar>.brand .brand-logo{width:96px!important;height:145px!important;object-fit:contain!important}
  .topbar>.main-nav{margin-top:0!important}
 }
+
+/* Product image gallery */
+.product-gallery{min-width:0}.product-thumbnails{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.product-thumb{width:66px;height:66px;padding:4px;border:1px solid #e1e6ed;border-radius:10px;background:#fff;cursor:pointer}.product-thumb.active{border:2px solid #a77a1d;box-shadow:0 0 0 2px #a77a1d22}.product-thumb img{width:100%;height:100%;object-fit:contain}.product-page-image img{cursor:zoom-in}
+
+/* Price, discount and battery styling */
+.prices{gap:8px}.price,.product-page-price{color:#c82332!important}.old-price,.detail-old-price{color:#171717!important;text-decoration:line-through}.discount-percent{display:inline-flex;align-items:center;color:#d7192d;background:#fff0f1;border-radius:5px;padding:2px 6px;font-size:12px;font-weight:900;direction:ltr}.saving-badge{position:absolute;top:8px;left:8px;z-index:2;background:rgba(190,25,42,.84);color:#fff;border-radius:5px;padding:5px 8px;font-size:10px;font-weight:900;box-shadow:0 2px 8px #0001}.product-image .badge{z-index:3}.battery-label{display:inline-block;margin:5px 0;padding:5px 9px;border-radius:7px;background:#eef7ef;color:#22663a;font-size:11px;font-weight:900}.detail-pricing{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.detail-pricing .product-page-price{margin:15px 0}.detail-old-price{font-size:14px}.saving-detail{color:#fff;background:rgba(190,25,42,.86);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:900}
