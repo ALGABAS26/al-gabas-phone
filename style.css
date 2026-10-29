@@ -116,3 +116,10 @@ footer .brand-logo{width:70px!important;height:105px!important;object-fit:contai
 
 /* Price, discount and battery styling */
 .prices{gap:8px}.price,.product-page-price{color:#c82332!important}.old-price,.detail-old-price{color:#171717!important;text-decoration:line-through}.discount-percent{display:inline-flex;align-items:center;color:#d7192d;background:#fff0f1;border-radius:5px;padding:2px 6px;font-size:12px;font-weight:900;direction:ltr}.saving-badge{position:absolute;top:8px;left:8px;z-index:2;background:rgba(190,25,42,.84);color:#fff;border-radius:5px;padding:5px 8px;font-size:10px;font-weight:900;box-shadow:0 2px 8px #0001}.product-image .badge{z-index:3}.battery-label{display:inline-block;margin:5px 0;padding:5px 9px;border-radius:7px;background:#eef7ef;color:#22663a;font-size:11px;font-weight:900}.detail-pricing{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.detail-pricing .product-page-price{margin:15px 0}.detail-old-price{font-size:14px}.saving-detail{color:#fff;background:rgba(190,25,42,.86);padding:5px 9px;border-radius:6px;font-size:12px;font-weight:900}
+
+/* Product details open as a dedicated full-screen view, not below the storefront */
+.product-page:not([hidden]){position:fixed;inset:0;z-index:9999;width:100%;max-width:none;margin:0;padding:calc(16px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;background:#fff;border:0;border-radius:0;box-shadow:none;}
+.product-page:not([hidden]) .product-page-inner{max-width:1100px;margin:16px auto 0;}
+.product-page:not([hidden]) .back-to-shop{position:sticky;top:0;z-index:2;display:inline-flex;margin:0 auto 8px;background:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 2px 12px #00000010;}
+body.product-open{overflow:hidden;}
+@media(max-width:700px){.product-page:not([hidden]){padding-inline:10px}.product-page:not([hidden]) .product-page-inner{gap:16px;padding:12px;margin-top:8px}.product-page:not([hidden]) .product-page-image,.product-page:not([hidden]) .product-page-image img{min-height:260px;height:280px}}

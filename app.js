@@ -1,7 +1,7 @@
 (() => {
 const SHOP_PHONE="201110103452", $=s=>document.querySelector(s);
 const grid=$("#product-grid"), status=$("#status"), count=$("#product-count");
-let products=[], selectedCategory="الكل";
+let products=[], selectedCategory="الكل", productReturnScroll=0;
 let cart=[];
 try { const saved=JSON.parse(localStorage.getItem("algabas_cart")||"[]"); cart=Array.isArray(saved)?saved.filter(x=>x&&x.id!==undefined&&Number(x.qty)>0).map(x=>({id:x.id,qty:Math.floor(Number(x.qty))})):[]; } catch { cart=[]; }
 $("#year").textContent=new Date().getFullYear();
@@ -37,11 +37,11 @@ function render(){
 }
 function showProduct(id){
  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
- const page=$("#product-page");page.hidden=false;
+ const page=$("#product-page");productReturnScroll=window.scrollY;page.hidden=false;document.body.classList.add("product-open");page.scrollTop=0;
  const pics=imageUrls(p.image),d=discountInfo(p),sp=productSpecs(p);page.innerHTML=`<button class="btn outline back-to-shop" style="color:#061629;border-color:#dce2eb" type="button">← الرجوع للمتجر</button><div class="product-page-inner"><div class="product-gallery"><div class="product-page-image">${pics.length?`<img id="product-main-image" src="${esc(pics[0])}" alt="${esc(p.name)}">`:'<div class="placeholder">الصورة غير متاحة</div>'}</div>${pics.length>1?`<div class="product-thumbnails">${pics.map((src,i)=>`<button type="button" class="product-thumb ${i===0?"active":""}" data-image-index="${i}" aria-label="الصورة ${i+1}"><img src="${esc(src)}" alt=""></button>`).join("")}</div>`:""}</div><div class="product-page-info"><span class="eyebrow">${esc(p.category||"منتجات الجباس استور")}</span><h1>${esc(p.name||"منتج")}</h1><span class="condition-label">${esc(p.condition||"جديد")}</span><div class="detail-pricing"><strong class="product-page-price">${money(p.price)}</strong>${d?`<span class="discount-percent">-${d.percent}%</span><del class="detail-old-price">${money(p.old_price)}</del><span class="saving-detail">وفر ${Math.round(d.amount).toLocaleString("en-US")} جنيه</span>`:""}</div>${sp.battery?`<div class="battery-label">صحة البطارية: ${esc(sp.battery)}%</div>`:""}<p>${esc(p.description||sp.text||"تواصل معنا لمعرفة تفاصيل المنتج.")}</p><p>${Number(p.quantity)>0?"متاح حاليًا":"يرجى تأكيد التوافر قبل الطلب"}</p><div class="qty-row"><label for="product-qty">الكمية</label><input id="product-qty" type="number" min="1" max="${Math.max(1,Number(p.quantity)||99)}" value="1"></div><button class="add-cart" id="page-add-cart" type="button">أضف إلى السلة</button></div></div>`;
- page.querySelectorAll("[data-image-index]").forEach(btn=>btn.onclick=()=>{const idx=Number(btn.dataset.imageIndex);$("#product-main-image").src=pics[idx];page.querySelectorAll(".product-thumb").forEach(t=>t.classList.toggle("active",t===btn));});page.querySelector(".back-to-shop").onclick=()=>{page.hidden=true;document.querySelector("#products").scrollIntoView({behavior:"smooth"});};
+ page.querySelectorAll("[data-image-index]").forEach(btn=>btn.onclick=()=>{const idx=Number(btn.dataset.imageIndex);$("#product-main-image").src=pics[idx];page.querySelectorAll(".product-thumb").forEach(t=>t.classList.toggle("active",t===btn));});page.querySelector(".back-to-shop").onclick=()=>{page.hidden=true;document.body.classList.remove("product-open");history.replaceState(null,"",location.pathname+location.search);window.scrollTo({top:productReturnScroll,behavior:"smooth"});};
  $("#page-add-cart").onclick=()=>addCart(id,Number($("#product-qty").value)||1);
- page.scrollIntoView({behavior:"smooth"});history.replaceState(null,"","#product-"+encodeURIComponent(id));
+ page.scrollTop=0;const productHash="#product-"+encodeURIComponent(id);if(location.hash!==productHash)history.pushState({productId:id},"",productHash);
 }
 function saveCart(){localStorage.setItem("algabas_cart",JSON.stringify(cart));renderCart();}
 function addCart(id,qty=1){const p=products.find(x=>String(x.id)===String(id));if(!p)return;qty=Math.max(1,Math.floor(Number(qty)||1));if(Number(p.quantity)>0)qty=Math.min(qty,Number(p.quantity));const old=cart.find(x=>String(x.id)===String(id));if(old){old.qty+=qty;if(Number(p.quantity)>0)old.qty=Math.min(old.qty,Number(p.quantity));}else cart.push({id:p.id,qty});saveCart();openCart();}
@@ -61,6 +61,7 @@ $("#checkout").onclick=()=>{if(!cart.length){renderCart();return;}let lines=["ا
 document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedCategory=b.dataset.category;render();}));
 document.querySelectorAll("[data-jump-category]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();selectedCategory=a.dataset.jumpCategory;document.querySelectorAll(".cat").forEach(b=>{b.classList.toggle("active",b.dataset.category===selectedCategory);});$("#search").value="";render();$("#products").scrollIntoView({behavior:"smooth"});}));
 $("#search").addEventListener("input",render);$("#sort").addEventListener("change",render);
+window.addEventListener("popstate",()=>{const page=$("#product-page");if(page&&!page.hidden){page.hidden=true;document.body.classList.remove("product-open");window.scrollTo({top:productReturnScroll});}});
 async function init(){if(!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){status.hidden=false;status.textContent="إعدادات الاتصال بقاعدة البيانات غير موجودة في config.js.";return;}if(!window.supabase?.createClient){status.hidden=false;status.textContent="تعذر تحميل مكتبة الاتصال. اتأكد من الإنترنت ثم أعد تحميل الصفحة.";return;}try{const client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const {data,error}=await client.from("products").select("id,name,category,price,old_price,quantity,specs,condition,image,badge,description,created_at").order("created_at",{ascending:false});if(error)throw error;products=data||[];cart=cart.filter(c=>products.some(p=>String(p.id)===String(c.id)));saveCart();render();renderCart();const hash=location.hash.match(/^#product-(.+)$/);if(hash){const id=decodeURIComponent(hash[1]);if(products.some(p=>String(p.id)===id))showProduct(id);}}catch(err){status.hidden=false;status.textContent=`تعذر تحميل المنتجات من Supabase: ${err.message||"خطأ غير معروف"}`;}}
 init();
 })();
