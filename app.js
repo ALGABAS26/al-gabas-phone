@@ -12,10 +12,41 @@ function discountInfo(p){const old=Number(p.old_price),now=Number(p.price);if(!(
 function productSpecs(p){const raw=String(p.specs||p.description||"");const m=raw.match(/\[\[BATTERY:(\d{1,3})\]\]/i);return {battery:m?m[1]:"",text:raw.replace(/\s*\[\[BATTERY:\d{1,3}\]\]\s*/ig," ").trim()};}
 function wa(text){return `https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(text)}`;}
 document.querySelectorAll("[data-whatsapp]").forEach(a=>{a.href=wa("السلام عليكم، عايز أستفسر عن منتجات الجباس استور.");a.target="_blank";a.rel="noopener noreferrer";});
-const hero=document.querySelector('.hero-slider');let heroSlide=0;
-const heroData=[{image:'home-hero.jpg',name:'iPhone 18 Pro Max',message:'السلام عليكم، عايز أستفسر عن جهاز iPhone 18 Pro Max الموجود في إعلان الجباس استور.'},{image:'home-hero-s26.jpg',name:'Samsung Galaxy S26 Ultra',message:'السلام عليكم، عايز أستفسر عن جهاز Samsung Galaxy S26 Ultra الموجود في إعلان الجباس استور.'}];
-function setHeroSlide(n){heroSlide=(n+heroData.length)%heroData.length;const d=heroData[heroSlide];hero.style.backgroundImage=`url('${d.image}')`;const buy=document.querySelector('#hero-buy');buy.href=wa(d.message);buy.target='_blank';buy.rel='noopener noreferrer';document.querySelectorAll('.hero-dots button').forEach((b,i)=>b.classList.toggle('active',i===heroSlide));}
-setHeroSlide(0);document.querySelector('.hero-prev').addEventListener('click',()=>setHeroSlide(heroSlide-1));document.querySelector('.hero-next').addEventListener('click',()=>setHeroSlide(heroSlide+1));document.querySelectorAll('.hero-dots button').forEach(b=>b.addEventListener('click',()=>setHeroSlide(Number(b.dataset.slide))));
+const hero=document.querySelector('.hero-slider');let heroSlide=0,heroTimer=null;
+const heroData=[
+ {image:'home-hero.jpg',name:'iPhone 18 Pro Max',message:'السلام عليكم، عايز أستفسر عن جهاز iPhone 18 Pro Max الموجود في إعلان الجباس استور.'},
+ {image:'home-hero-s26.jpg',name:'Samsung Galaxy S26 Ultra',message:'السلام عليكم، عايز أستفسر عن جهاز Samsung Galaxy S26 Ultra الموجود في إعلان الجباس استور.'},
+ {image:'home-hero-bundle.jpg',name:'الباقة المميزة',message:'السلام عليكم، عايز أستفسر عن الباقة المميزة التي تضم iPhone 18 Pro Max وSamsung Galaxy S26 Ultra. ما تفاصيل العرض والخصم المتاح عند الشراء معًا؟'}
+];
+function setHeroSlide(n){
+ heroSlide=(n+heroData.length)%heroData.length;
+ const d=heroData[heroSlide];
+ hero.style.backgroundImage=`url('${d.image}')`;
+ hero.setAttribute('aria-label',`إعلان ${d.name} — اضغط للاستفسار عبر واتساب`);
+ const buy=document.querySelector('#hero-buy');
+ buy.href=wa(d.message);buy.target='_blank';buy.rel='noopener noreferrer';
+ buy.setAttribute('aria-label',`استفسر عن ${d.name} على واتساب`);
+ document.querySelectorAll('.hero-dots button').forEach((b,i)=>b.classList.toggle('active',i===heroSlide));
+}
+function resetHeroTimer(){
+ if(heroTimer) clearInterval(heroTimer);
+ heroTimer=setInterval(()=>{if(!document.hidden)setHeroSlide(heroSlide+1);},5000);
+}
+setHeroSlide(0);resetHeroTimer();
+document.querySelector('.hero-prev').addEventListener('click',()=>{setHeroSlide(heroSlide-1);resetHeroTimer();});
+document.querySelector('.hero-next').addEventListener('click',()=>{setHeroSlide(heroSlide+1);resetHeroTimer();});
+document.querySelectorAll('.hero-dots button').forEach(b=>b.addEventListener('click',()=>{setHeroSlide(Number(b.dataset.slide));resetHeroTimer();}));
+hero.addEventListener('click',e=>{
+ if(e.target.closest('.hero-arrow,.hero-dots,.hero-hotspot'))return;
+ window.open(wa(heroData[heroSlide].message),'_blank','noopener');
+});
+let heroTouchX=null;
+hero.addEventListener('touchstart',e=>{heroTouchX=e.changedTouches[0].clientX;},{passive:true});
+hero.addEventListener('touchend',e=>{
+ if(heroTouchX===null)return;
+ const dx=e.changedTouches[0].clientX-heroTouchX;heroTouchX=null;
+ if(Math.abs(dx)>45){setHeroSlide(heroSlide+(dx<0?1:-1));resetHeroTimer();}
+},{passive:true});
 
 function categoryMatch(p){
  const hay=[p.name,p.category,p.description,p.specs,p.condition,p.brand,p.model].filter(Boolean).join(" ").toLocaleLowerCase("ar");
