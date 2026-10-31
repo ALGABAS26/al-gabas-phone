@@ -72,6 +72,7 @@ begin
  if jsonb_typeof(p_items)<>'array' or jsonb_array_length(p_items)=0 then raise exception 'أضف منتجًا واحدًا على الأقل'; end if;
  if jsonb_typeof(p_payments)<>'array' then raise exception 'بيانات التحصيل غير صحيحة'; end if;
  if coalesce(p_discount,0)<0 then raise exception 'الخصم غير صحيح'; end if;
+ if exists(select 1 from jsonb_array_elements(p_items) with ordinality a(value,ordinality), jsonb_array_elements(p_items) with ordinality b(value,ordinality) where a.ordinality < b.ordinality and a.value->>'product_id'=b.value->>'product_id') then raise exception 'لا تكرر نفس المنتج في سطرين؛ اجمع الكمية في سطر واحد'; end if;
 
  -- Validate and lock products, then calculate invoice subtotal.
  for v_item in select value from jsonb_array_elements(p_items) loop
