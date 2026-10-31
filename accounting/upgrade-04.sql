@@ -65,7 +65,7 @@ declare
  v_owner uuid:=auth.uid(); v_invoice uuid; v_subtotal numeric(14,2):=0;
  v_total numeric(14,2); v_paid numeric(14,2):=0; v_item jsonb; v_payment jsonb;
  v_product public.erp_products%rowtype; v_qty integer; v_price numeric(14,2);
- v_units integer; v_account text; v_amount numeric(14,2);
+ v_units integer; v_account text; v_amount numeric(14,2); v_payment_id uuid;
 begin
  if v_owner is null then raise exception 'يجب تسجيل الدخول'; end if;
  if coalesce(trim(p_invoice_no),'')='' then raise exception 'رقم الفاتورة مطلوب'; end if;
@@ -124,10 +124,9 @@ begin
  for v_payment in select value from jsonb_array_elements(p_payments) loop
    v_account:=v_payment->>'account_code'; v_amount:=(v_payment->>'amount')::numeric;
    if v_amount>0 then
-     insert into public.erp_sales_payments(owner_id,invoice_id,account_code,amount) values(v_owner,v_invoice,v_account,v_amount);
+     insert into public.erp_sales_payments(owner_id,invoice_id,account_code,amount) values(v_owner,v_invoice,v_account,v_amount) returning id into v_payment_id;
      insert into public.erp_cash_movements(owner_id,movement_date,direction,amount,description,source_type,source_id,account_code)
-     values(v_owner,coalesce(p_invoice_date,current_date),'in',v_amount,'تحصيل فاتورة مبيعات رقم '||trim(p_invoice_no),'sale_payment',v_invoice,v_account)
-     on conflict(owner_id,source_type,source_id) do update set amount=erp_cash_movements.amount+excluded.amount;
+     values(v_owner,coalesce(p_invoice_date,current_date),'in',v_amount,'تحصيل فاتورة مبيعات رقم '||trim(p_invoice_no),'sale_payment',v_payment_id,v_account);
    end if;
  end loop;
  return v_invoice;
