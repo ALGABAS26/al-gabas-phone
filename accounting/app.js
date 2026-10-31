@@ -8,7 +8,7 @@ function luhn(s){let sum=0,alt=false;for(let i=s.length-1;i>=0;i--){let n=+s[i];
 function imeis(t){return [...new Set((digits(t).match(/\d{15}/g)||[]).filter(luhn))].slice(0,2);}
 function barcode(){return "AGP"+Date.now().toString().slice(-10)+Math.floor(Math.random()*90+10);}
 function effect(x){let a=Number(x.amount||0);if(x.type==="topup"||x.type==="settlement"||x.type==="reversal")return a;if(x.type==="withdrawal"||x.type==="service")return -a;return 0;}
-function page(name){document.querySelectorAll(".page").forEach(x=>x.hidden=true);$("#page-"+name).hidden=false;document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===name));$("#page-title").textContent=({dashboard:"لوحة التحكم",products:"المخزون والمنتجات",scanner:"الماسح الذكي",fawry:"حساب ماكينة فوري",cashbox:"الخزنة والأرصدة",sales:"المبيعات",parties:"العملاء والموردين",maintenance:"الصيانة"})[name];if(name==="products")loadProducts();if(name==="fawry")loadFawryClosing();if(name==="maintenance")loadMaintenance();if(name==="cashbox")loadCashbox();if(name==="sales")loadSales();if(name==="parties")loadParties();}
+function page(name){document.querySelectorAll(".page").forEach(x=>x.hidden=true);$("#page-"+name).hidden=false;document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===name));$("#page-title").textContent=({dashboard:"لوحة التحكم",products:"المخزون والمنتجات",scanner:"الماسح الذكي",fawry:"حساب ماكينة فوري",cashbox:"الخزنة والأرصدة",sales:"المبيعات",parties:"العملاء والموردين",purchases:"المشتريات",maintenance:"الصيانة"})[name];if(name==="products")loadProducts();if(name==="fawry")loadFawryClosing();if(name==="maintenance")loadMaintenance();if(name==="cashbox")loadCashbox();if(name==="sales")loadSales();if(name==="parties")loadParties();if(name==="purchases")loadPurchases();}
 async function boot(){try{if(!window.supabase){$("#login-error").textContent="مكتبة الاتصال لم تتحمل. تأكد من الإنترنت ثم حدّث الصفحة.";return;}if(!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){$("#login-error").textContent="إعدادات Supabase غير موجودة في config.js.";return;}db=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const r=await db.auth.getSession();if(r.error)throw r.error;session=r.data.session;if(session)enter();else{$("#login-view").hidden=false;$("#app-view").hidden=true;}db.auth.onAuthStateChange((e,s)=>{session=s;if(s)enter();else{$("#app-view").hidden=true;$("#login-view").hidden=false;}});}catch(e){db=null;$("#login-error").textContent="تعذر تهيئة الاتصال: "+(e.message||e);console.error("Supabase boot:",e);}}
 async function enter(){$("#login-view").hidden=true;$("#app-view").hidden=false;$("#user-email").textContent=session.user.email;$("#today").textContent=new Date().toLocaleDateString("ar-EG");page("dashboard");await dashboard();}
 async function loginAccount(){const btn=$("#login-submit"),err=$("#login-error");err.textContent="";if(!db){err.textContent="الاتصال بقاعدة البيانات لم يكتمل. حدّث الصفحة.";return;}const email=$("#email").value.trim(),password=$("#password").value;if(!email||!password){err.textContent="اكتب البريد الإلكتروني وكلمة المرور.";return;}btn.disabled=true;btn.textContent="جارٍ تسجيل الدخول...";try{const r=await db.auth.signInWithPassword({email,password});if(r.error)err.textContent="تعذر تسجيل الدخول: "+r.error.message;else if(!r.data.session)err.textContent="لم يتم إنشاء جلسة دخول. حاول مرة أخرى.";}catch(e){err.textContent="حدث خطأ في الاتصال: "+(e.message||e);}finally{btn.disabled=false;btn.textContent="تسجيل الدخول";}}
@@ -129,6 +129,49 @@ async function refreshPartyLedger(){
 }
 $("#party-ledger-close").onclick=()=>{$("#party-ledger-panel").hidden=true;activeParty=null;};
 $("#party-tx-form").onsubmit=async e=>{e.preventDefault();if(!activeParty)return;const row={owner_id:session.user.id,party_id:activeParty.id,transaction_date:$("#party-tx-date").value,direction:$("#party-tx-direction").value,amount:Number($("#party-tx-amount").value),description:$("#party-tx-description").value.trim()};const {error}=await db.from("erp_party_transactions").insert(row);if(error){notice("تعذر حفظ الحركة: "+error.message,true);return;}notice("تم تسجيل الحركة في كشف الحساب.");$("#party-tx-form").reset();$("#party-tx-date").value=localDate();await refreshPartyLedger();await loadParties();};
+
+function purchaseInvoiceNo(){return "PUR-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-6);}
+let purchaseProducts=[];
+function purchaseAddLine(){
+ const opts='<option value="">اختر المنتج</option>'+purchaseProducts.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join("");
+ const tr=document.createElement("tr");tr.innerHTML='<td><select class="purchase-product">'+opts+'</select></td><td><input class="purchase-qty" type="number" min="1" step="1" value="1"></td><td><input class="purchase-cost" type="number" min="0" step="0.01" value="0"></td><td class="purchase-line-total">0.00</td><td><button type="button" class="secondary purchase-remove">حذف</button></td>';
+ $("#purchase-lines").appendChild(tr);purchaseCalc();
+}
+function purchaseCalc(){
+ let subtotal=0;document.querySelectorAll("#purchase-lines tr").forEach(tr=>{const q=Number(tr.querySelector(".purchase-qty").value||0),c=Number(tr.querySelector(".purchase-cost").value||0),v=q*c;subtotal+=v;tr.querySelector(".purchase-line-total").textContent=money(v);});
+ const total=Math.max(0,subtotal-Number($("#purchase-discount").value||0)),paid=["drawer","vodafone","instapay"].reduce((s,k)=>s+Number($("#purchase-pay-"+k).value||0),0);
+ $("#purchase-total").textContent=money(total);$("#purchase-paid").textContent=money(paid);$("#purchase-remaining").textContent="المتبقي: "+money(Math.max(0,total-paid));
+}
+async function loadPurchases(){
+ const [pr,sr,ir]=await Promise.all([
+  db.from("erp_products").select("id,name,quantity,cost_price").order("name"),
+  db.from("erp_parties").select("id,name").eq("party_type","supplier").order("name"),
+  db.from("erp_purchase_invoices").select("*").order("created_at",{ascending:false}).limit(100)
+ ]);
+ if(pr.error||sr.error||ir.error){notice("تعذر تحميل المشتريات: "+(pr.error||sr.error||ir.error).message,true);return;}
+ purchaseProducts=pr.data||[];
+ $("#purchase-supplier").innerHTML='<option value="">مورد نقدي / غير محدد</option>'+(sr.data||[]).map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join("");
+ $("#purchase-no").value=purchaseInvoiceNo();$("#purchase-date").value=localDate();
+ if(!$("#purchase-lines").children.length)purchaseAddLine();
+ $("#purchases-body").innerHTML=(ir.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td></tr>").join("")||"<tr><td colspan='6'>لا توجد فواتير شراء.</td></tr>";
+}
+$("#purchase-add-line").onclick=purchaseAddLine;
+$("#purchase-lines").oninput=purchaseCalc;
+$("#purchase-lines").onchange=purchaseCalc;
+$("#purchase-lines").onclick=e=>{if(e.target.classList.contains("purchase-remove")){e.target.closest("tr").remove();purchaseCalc();}};
+["purchase-discount","purchase-pay-drawer","purchase-pay-vodafone","purchase-pay-instapay"].forEach(id=>$("#"+id).oninput=purchaseCalc);
+$("#purchase-form").onsubmit=async e=>{
+ e.preventDefault();const rows=[...document.querySelectorAll("#purchase-lines tr")];
+ const items=rows.map(tr=>({product_id:tr.querySelector(".purchase-product").value,quantity:Number(tr.querySelector(".purchase-qty").value),unit_cost:Number(tr.querySelector(".purchase-cost").value)}));
+ if(items.some(x=>!x.product_id||!Number.isInteger(x.quantity)||x.quantity<1||x.unit_cost<0)){notice("راجع الأصناف والكميات وتكلفة الشراء.",true);return;}
+ const payments=[["drawer","purchase-pay-drawer"],["vodafone_cash","purchase-pay-vodafone"],["instapay","purchase-pay-instapay"]].map(([account_code,id])=>({account_code,amount:Number($("#"+id).value||0)}));
+ const args={p_invoice_no:$("#purchase-no").value.trim(),p_invoice_date:$("#purchase-date").value,p_supplier_id:$("#purchase-supplier").value||null,p_discount:Number($("#purchase-discount").value||0),p_notes:$("#purchase-notes").value.trim()||null,p_items:items,p_payments:payments};
+ const btn=e.submitter;if(btn)btn.disabled=true;
+ try{const {error}=await db.rpc("erp_create_purchase",args);if(error)throw error;notice("تم حفظ فاتورة الشراء، وزادت الكميات وتم تحديث متوسط تكلفة الأصناف وتسجيل المدفوع.");$("#purchase-form").reset();$("#purchase-lines").innerHTML="";$("#purchase-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#purchase-pay-"+k).value=0);$("#purchase-no").value=purchaseInvoiceNo();$("#purchase-date").value=localDate();await loadPurchases();await loadCashbox();await dashboard();}
+ catch(err){notice("لم يتم حفظ فاتورة الشراء: "+(err.message||err),true);}
+ finally{if(btn)btn.disabled=false;}
+};
+
 async function loadMaintenance(){const {data,error}=await db.from("erp_maintenance_orders").select("*").order("created_at",{ascending:false});if(error){notice("شغّل ملف accounting/upgrade-02.sql في Supabase أولاً: "+error.message,true);return;}const labels={received:"تم الاستلام",diagnosing:"تحت الفحص",waiting_parts:"في انتظار قطع غيار",in_repair:"تحت الإصلاح",ready:"جاهز للتسليم",delivered:"تم التسليم",cancelled:"ملغي"};$("#maintenance-body").innerHTML=(data||[]).map(x=>"<tr><td>"+esc(x.ticket_no)+"</td><td>"+esc(x.customer_name)+"</td><td>"+esc(x.device_name)+"</td><td>"+esc(x.problem)+"</td><td>"+(labels[x.status]||x.status)+"</td><td>"+new Date(x.received_at).toLocaleDateString("ar-EG")+"</td></tr>").join("")||"<tr><td colspan='6'>لا توجد أجهزة مسجلة.</td></tr>";}
 $("#maintenance-form").onsubmit=async e=>{e.preventDefault();const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:Number($("#m-estimate").value||0),notes:$("#m-notes").value.trim()||null};const {error}=await db.from("erp_maintenance_orders").insert(row);if(error){notice("تعذر حفظ أمر الصيانة: "+error.message,true);return;}notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket);$("#maintenance-form").reset();await loadMaintenance();};
 
