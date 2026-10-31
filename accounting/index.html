@@ -39,4 +39,26 @@
 </section>
 </main></div>
 <div id="camera-modal" class="modal" hidden><div class="modal-card"><button id="close-camera" class="close">×</button><h3 id="camera-title">الكاميرا</h3><video id="modal-video" playsinline autoplay muted></video><canvas id="modal-canvas" hidden></canvas><p id="camera-help" class="muted">وجّه الكاميرا نحو الرقم أو الباركود.</p><div class="inline-actions"><button id="capture-photo" class="primary">التقاط وقراءة</button><button id="modal-stop" class="secondary">إيقاف</button></div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src=\'https://unpkg.com/@supabase/supabase-js@2\'"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script src="../config.js"></script><script src="app.js?v=20261031-loginfix3"></script></body></html>
+<script>
+(function(){
+ const sources=[
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+  "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
+ ];
+ function loadConfigAndApp(){
+  const c=document.createElement("script");c.src="../config.js";
+  c.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261031-loginfix4";document.body.appendChild(a);};
+  c.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل ملف إعدادات الاتصال config.js.";};
+  document.body.appendChild(c);
+ }
+ function trySource(i){
+  if(i>=sources.length){document.getElementById("login-error").textContent="تعذر تحميل مكتبة Supabase من المصدرين. جرّب تعطيل توفير البيانات أو مانع الإعلانات ثم أعد فتح الصفحة.";return;}
+  const s=document.createElement("script");s.src=sources[i];
+  s.onload=function(){if(window.supabase)loadConfigAndApp();else trySource(i+1);};
+  s.onerror=function(){trySource(i+1);};
+  document.head.appendChild(s);
+ }
+ trySource(0);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script></body></html>
