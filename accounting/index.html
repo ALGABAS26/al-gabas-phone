@@ -83,6 +83,7 @@
 <div class="panel" id="party-ledger-panel" hidden><div class="section-head"><div><h3 id="party-ledger-title">كشف الحساب</h3><p class="muted" id="party-ledger-balance"></p></div><button class="secondary" id="party-ledger-close">إغلاق الكشف</button></div>
 <form id="party-tx-form" class="form-grid"><label>التاريخ<input id="party-tx-date" type="date" required></label><label>نوع الحركة<select id="party-tx-direction"></select></label><label>المبلغ<input id="party-tx-amount" type="number" min="0.01" step="0.01" required></label><label>البيان<input id="party-tx-description" required placeholder="مثال: تحصيل دفعة نقدية"></label><div class="wide"><button class="primary" type="submit">حفظ الحركة</button></div></form>
 <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>زيادة الرصيد</th><th>تخفيض الرصيد</th></tr></thead><tbody id="party-ledger-body"></tbody></table></div></div>
+<div class="panel" id="supplier-purchases-panel" hidden><div class="section-head"><div><h3 id="supplier-purchases-title">مشتريات المورد</h3><p class="muted" id="supplier-purchases-summary"></p></div><button class="secondary" id="supplier-purchases-close">إغلاق</button></div><div class="table-wrap"><table><thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>تكلفة الوحدة</th><th>إجمالي الصنف</th><th>متبقي الفاتورة</th></tr></thead><tbody id="supplier-purchases-body"></tbody></table></div></div>
 </section>
 <section class="page" id="page-purchases" hidden>
 <div class="section-head"><div><h2>المشتريات وفواتير الشراء</h2><p class="muted">تسجيل مشتريات المحل، زيادة المخزون، وتحديث تكلفة الصنف وحساب المورد والخزنة.</p></div></div>
@@ -92,7 +93,7 @@
 <label>المورد<select id="purchase-supplier"><option value="">مورد نقدي / غير محدد</option></select></label><label>ملاحظات<input id="purchase-notes" placeholder="اختياري"></label>
 </div>
 <div class="table-head"><h3>الأصناف المشتراة</h3><button type="button" class="secondary" id="purchase-add-line">＋ إضافة صنف</button></div>
-<div class="table-wrap"><table><thead><tr><th>المنتج</th><th>الكمية</th><th>تكلفة الوحدة</th><th>الإجمالي</th><th></th></tr></thead><tbody id="purchase-lines"></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>المنتج</th><th>الكمية</th><th>تكلفة الوحدة</th><th>الإجمالي</th><th></th></tr></thead><tbody id="purchase-lines"></tbody></table></div><p class="muted tiny" id="purchase-items-count">عدد الأصناف المختلفة: 0 — إجمالي عدد القطع: 0</p>
 <div class="form-grid" style="margin-top:14px">
 <label>الخصم<input id="purchase-discount" type="number" min="0" step="0.01" value="0"></label>
 <div class="stat"><span>إجمالي الفاتورة</span><b id="purchase-total">0.00 EGP</b></div>
