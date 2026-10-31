@@ -108,12 +108,12 @@ async function loadParties(){
  if(pr.error||tr.error){notice("شغّل accounting/upgrade-05.sql في Supabase أولاً: "+(pr.error||tr.error).message,true);return;}
  parties=pr.data||[];const sums={};(tr.data||[]).forEach(x=>{sums[x.party_id]=(sums[x.party_id]||0)+(x.direction==="increase"?1:-1)*Number(x.amount);});
  const q=$("#party-search").value.trim().toLowerCase();
- $("#parties-body").innerHTML=parties.filter(p=>(p.name+" "+(p.phone||"")).toLowerCase().includes(q)).map(p=>"<tr><td>"+(p.party_type==="customer"?"عميل":"مورد")+"</td><td>"+esc(p.name)+"</td><td>"+esc(p.phone||"—")+"</td><td>"+money(p.opening_balance)+"</td><td>"+money(Number(p.opening_balance||0)+(sums[p.id]||0))+"</td><td><button class='secondary party-open' data-id='"+p.id+"'>فتح الكشف</button></td></tr>").join("")||"<tr><td colspan='6'>لا توجد بيانات مطابقة.</td></tr>";
+ $("#parties-body").innerHTML=parties.filter(p=>(p.name+" "+(p.phone||"")).toLowerCase().includes(q)).map(p=>"<tr><td>"+(p.party_type==="customer"?"عميل":"مورد")+"</td><td>"+esc(p.name)+"</td><td>"+esc(p.phone||"—")+"</td><td>"+money(p.opening_balance)+"</td><td>"+money(Number(p.opening_balance||0)+(sums[p.id]||0))+"</td><td><button class='secondary party-open' data-id='"+p.id+"'>فتح الكشف</button> "+(p.party_type==="supplier"?"<button class='secondary supplier-purchases-open' data-id='"+p.id+"'>مشتريات المورد</button>":"")+"</td></tr>").join("")||"<tr><td colspan='6'>لا توجد بيانات مطابقة.</td></tr>";
 }
 $("#party-new").onclick=()=>{$("#party-form-panel").hidden=false;$("#party-name").focus();};
 $("#party-cancel").onclick=()=>{$("#party-form-panel").hidden=true;$("#party-form").reset();};
 $("#party-search").oninput=loadParties;
-$("#parties-body").onclick=e=>{const b=e.target.closest(".party-open");if(b)openParty(b.dataset.id);};
+$("#parties-body").onclick=e=>{const b=e.target.closest(".party-open"),s=e.target.closest(".supplier-purchases-open");if(b)openParty(b.dataset.id);if(s)openSupplierPurchases(s.dataset.id);};
 $("#party-form").onsubmit=async e=>{e.preventDefault();const row={owner_id:session.user.id,party_type:$("#party-type").value,name:$("#party-name").value.trim(),phone:$("#party-phone").value.trim()||null,address:$("#party-address").value.trim()||null,opening_balance:Number($("#party-opening").value||0),notes:$("#party-notes").value.trim()||null};const {error}=await db.from("erp_parties").insert(row);if(error){notice("تعذر حفظ البيانات: "+error.message,true);return;}notice("تم حفظ بيانات الطرف بنجاح.");$("#party-form").reset();$("#party-form-panel").hidden=true;await loadParties();};
 async function openParty(id){
  activeParty=parties.find(p=>p.id===id);if(!activeParty)return;
@@ -138,10 +138,30 @@ function purchaseAddLine(){
  $("#purchase-lines").appendChild(tr);purchaseCalc();
 }
 function purchaseCalc(){
- let subtotal=0;document.querySelectorAll("#purchase-lines tr").forEach(tr=>{const q=Number(tr.querySelector(".purchase-qty").value||0),c=Number(tr.querySelector(".purchase-cost").value||0),v=q*c;subtotal+=v;tr.querySelector(".purchase-line-total").textContent=money(v);});
+ let subtotal=0,totalQty=0;const lineRows=[...document.querySelectorAll("#purchase-lines tr")];lineRows.forEach(tr=>{const q=Number(tr.querySelector(".purchase-qty").value||0),c=Number(tr.querySelector(".purchase-cost").value||0),v=q*c;subtotal+=v;totalQty+=q;tr.querySelector(".purchase-line-total").textContent=money(v);});
+ $("#purchase-items-count").textContent="عدد الأصناف المختلفة: "+lineRows.filter(tr=>tr.querySelector(".purchase-product").value).length+" — إجمالي عدد القطع: "+totalQty;
  const total=Math.max(0,subtotal-Number($("#purchase-discount").value||0)),paid=["drawer","vodafone","instapay"].reduce((s,k)=>s+Number($("#purchase-pay-"+k).value||0),0);
  $("#purchase-total").textContent=money(total);$("#purchase-paid").textContent=money(paid);$("#purchase-remaining").textContent="المتبقي: "+money(Math.max(0,total-paid));
 }
+async function openSupplierPurchases(id){
+ const supplier=parties.find(p=>p.id===id&&p.party_type==="supplier");if(!supplier)return;
+ $("#supplier-purchases-panel").hidden=false;$("#supplier-purchases-title").textContent="مشتريات المورد: "+supplier.name;
+ $("#supplier-purchases-summary").textContent="جاري تحميل فواتير وأصناف المورد...";
+ $("#supplier-purchases-body").innerHTML="<tr><td colspan='7'>جاري التحميل...</td></tr>";
+ $("#supplier-purchases-panel").scrollIntoView({behavior:"smooth",block:"start"});
+ const {data:invoices,error}=await db.from("erp_purchase_invoices").select("id,invoice_no,invoice_date,total,paid,remaining").eq("supplier_id",id).order("invoice_date",{ascending:false});
+ if(error){notice("تعذر تحميل مشتريات المورد: "+error.message,true);return;}
+ const ids=(invoices||[]).map(x=>x.id);
+ if(!ids.length){$("#supplier-purchases-summary").textContent="لا توجد فواتير شراء مسجلة لهذا المورد.";$("#supplier-purchases-body").innerHTML="<tr><td colspan='7'>لا توجد مشتريات.</td></tr>";return;}
+ const {data:items,error:itemError}=await db.from("erp_purchase_invoice_items").select("invoice_id,product_name,quantity,unit_cost,line_total").in("invoice_id",ids);
+ if(itemError){notice("تعذر تحميل أصناف فواتير المورد: "+itemError.message,true);return;}
+ const byId={};(invoices||[]).forEach(x=>byId[x.id]=x);
+ const rows=(items||[]).map(x=>{const inv=byId[x.invoice_id]||{};return "<tr><td>"+esc(inv.invoice_no||"—")+"</td><td>"+esc(inv.invoice_date||"—")+"</td><td>"+esc(x.product_name)+"</td><td>"+Number(x.quantity||0)+"</td><td>"+money(x.unit_cost)+"</td><td>"+money(x.line_total)+"</td><td>"+money(inv.remaining)+"</td></tr>";});
+ const qty=(items||[]).reduce((s,x)=>s+Number(x.quantity||0),0),sum=(invoices||[]).reduce((s,x)=>s+Number(x.total||0),0),paid=(invoices||[]).reduce((s,x)=>s+Number(x.paid||0),0);
+ $("#supplier-purchases-summary").textContent="عدد الفواتير: "+invoices.length+" — عدد الأصناف المسجلة: "+items.length+" — إجمالي القطع: "+qty+" — إجمالي المشتريات: "+money(sum)+" — المدفوع: "+money(paid)+" — المتبقي: "+money(sum-paid);
+ $("#supplier-purchases-body").innerHTML=rows.join("")||"<tr><td colspan='7'>الفواتير موجودة لكن لا توجد تفاصيل أصناف.</td></tr>";
+}
+$("#supplier-purchases-close").onclick=()=>{$("#supplier-purchases-panel").hidden=true;};
 async function loadPurchases(){
  const [pr,sr,ir]=await Promise.all([
   db.from("erp_products").select("id,name,quantity,cost_price").order("name"),
