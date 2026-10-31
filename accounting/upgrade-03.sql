@@ -10,6 +10,13 @@ create table if not exists public.erp_cash_accounts (
  updated_at timestamptz not null default now(),
  unique(owner_id,account_code)
 );
+alter table public.erp_fawry_daily_closings
+ add column if not exists funding_account text not null default 'drawer';
+alter table public.erp_fawry_daily_closings
+ drop constraint if exists erp_fawry_daily_closings_funding_account_check;
+alter table public.erp_fawry_daily_closings
+ add constraint erp_fawry_daily_closings_funding_account_check
+ check(funding_account in ('drawer','vodafone_cash','instapay'));
 alter table public.erp_cash_movements
  add column if not exists account_code text not null default 'drawer';
 alter table public.erp_cash_movements
@@ -53,11 +60,11 @@ begin
  if v_previous is not null and p_opening_balance<>v_previous then
    raise exception 'رصيد افتتاح اليوم يجب أن يساوي رصيد إغلاق آخر تقفيل محفوظ: %',v_previous;
  end if;
- insert into public.erp_fawry_daily_closings(owner_id,close_date,opening_balance,topup_amount,closing_balance,profit,notes)
- values(v_owner,p_close_date,p_opening_balance,p_topup_amount,p_closing_balance,p_profit,nullif(trim(p_notes),''))
+ insert into public.erp_fawry_daily_closings(owner_id,close_date,opening_balance,topup_amount,closing_balance,profit,notes,funding_account)
+ values(v_owner,p_close_date,p_opening_balance,p_topup_amount,p_closing_balance,p_profit,nullif(trim(p_notes),''),p_funding_account)
  on conflict(owner_id,close_date) do update set
  opening_balance=excluded.opening_balance,topup_amount=excluded.topup_amount,
- closing_balance=excluded.closing_balance,profit=excluded.profit,notes=excluded.notes,updated_at=now()
+ closing_balance=excluded.closing_balance,profit=excluded.profit,notes=excluded.notes,funding_account=excluded.funding_account,updated_at=now()
  returning id into v_id;
  if p_topup_amount>0 then
    insert into public.erp_cash_movements(owner_id,movement_date,direction,amount,description,source_type,source_id,account_code)
