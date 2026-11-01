@@ -1,0 +1,16 @@
+{
+  "id": "./index.html",
+  "name": "الجباس ستور",
+  "short_name": "الجباس ستور",
+  "description": "نظام إدارة وحسابات الجباس ستور",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101b2d",
+  "theme_color": "#101b2d",
+  "icons": [
+    { "src": "./store-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
