@@ -1,0 +1,8 @@
+{
+  "appId": "com.algabas.store",
+  "appName": "الجباس ستور",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
