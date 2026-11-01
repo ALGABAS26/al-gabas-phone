@@ -1,0 +1,16 @@
+{
+  "name": "al-gabas-store-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Al Gabas Store accounting app Android wrapper",
+  "scripts": {
+    "build:android": "mkdir -p www && cp -R accounting/. www/ && cp config.js www/config.js && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/core": "^7.4.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.0"
+  }
+}
