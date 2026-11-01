@@ -25,21 +25,34 @@ jobs:
           java-version: "21"
       - name: Install dependencies
         run: npm install
-      - name: Add Android platform and sync app
+      - name: Add Android platform and generate branded icons
         run: |
-          mkdir -p www
+          mkdir -p www assets
           cp -R accounting/. www/
           cp config.js www/config.js
+          cp accounting/store-icon.svg assets/logo.svg
           npx cap add android
+          npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           npx cap sync android
       - name: Build debug APK
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+      - name: Build release bundle (unsigned preview only)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: al-gabas-store-android-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      - name: Upload unsigned AAB preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: al-gabas-store-unsigned-aab-preview
+          path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
