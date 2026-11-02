@@ -175,3 +175,23 @@ Client EXECUTE is explicitly revoked from PUBLIC and anon and granted to authent
 The regression script checks expense and transfer NULL inputs, purchase NULL arrays/elements, and that rejected purchase requests do not change product quantity or cash-movement count. It also documents positive-path and IMEI staging checks.
 
 **Pending verification:** no PostgreSQL parser/runtime execution occurred in this chat. The purchase RPC body is a source-preserving hardening rewrite and still needs comparison against the live staging schema and positive-path regression coverage, including weighted-average cost, supplier balance, payment/cash linkage, and IMEI unit mapping. No production SQL was run.
+
+
+## Static EXECUTE privilege review — legacy function exposure
+
+A static source review of migration files `upgrade-02.sql` through `upgrade-12.sql` found that the following client-callable RPCs were granted to `authenticated` but their defining migrations did not explicitly revoke EXECUTE from `PUBLIC` or `anon`:
+
+- `erp_save_fawry_daily_close(date,numeric,numeric,numeric,numeric,text)` (later replaced by the seven-argument form in upgrade 03 and hardened in upgrade 25)
+- `erp_init_cash_accounts()`
+- `erp_create_sale(...)` (the exact deployed signature is captured by the ACL audit; upgrade 23 later replaces the current signature and revokes PUBLIC/anon)
+- `erp_create_purchase(text,date,uuid,numeric,text,jsonb,jsonb)` (hardened in upgrade 26)
+- `erp_record_expense(date,text,numeric,text,text)` (hardened in upgrade 26)
+- `erp_post_stock_count(date,text,jsonb)`
+- `erp_post_return(text,text,uuid,date,text,jsonb,jsonb)` (hardened in upgrade 24)
+- `erp_transfer_cash(date,text,text,numeric,text)` (hardened in upgrade 26)
+
+The trigger/helper functions introduced in upgrades 10–12 also lack explicit EXECUTE revokes in their original migrations. Trigger functions cannot be invoked as ordinary SQL functions, but their ACLs should still be classified and tightened where appropriate. The pure IMEI Luhn helper is a separate low-risk helper, not a browser RPC.
+
+This is a **static migration-source finding**, not proof that the current production database still has these ACLs: later migrations, manual grants, default privileges, ownership, and role membership can change effective permissions. The existing SELECT-only `ERP-ACL-EXECUTION-DEPENDENCY-AUDIT.sql` remains the authoritative staging evidence collection. No broad revoke migration has been drafted because exact function signatures, PUBLIC/anon effective privileges, role membership, trigger dependencies, and default ACLs must be reviewed first.
+
+Upgrade 14's `erp_my_shop_profile()` is the only SECURITY DEFINER function found in the reviewed migration range. It explicitly revokes PUBLIC/anon and grants authenticated, but its staging behavior and safe search_path configuration remain part of the separate SECURITY DEFINER review. No production ACL changes were made.
