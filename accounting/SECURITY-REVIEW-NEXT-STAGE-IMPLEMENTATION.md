@@ -206,3 +206,15 @@ This branch work is not production authorization. No live SQL is run by this spe
 - New orders always begin in the existing `received` status. Existing status-update/read behavior is unchanged.
 - Adds a rollback-based staging test for ticket generation, valid order data, optional defaults, invalid required fields/cost, and unauthenticated invocation.
 - Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
+
+## 17. Eighth implementation slice — shop settings upsert
+
+- New migration: `upgrade-22.sql`.
+- RPC: `erp_save_shop_settings(...)`.
+- The settings form now calls the RPC instead of directly upserting `erp_shop_settings`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives `owner_id` only from `auth.uid()`.
+- Validates required Arabic/English shop names and enforces EGP, matching the current table constraint. Optional phone/address/note values normalize to NULL; blank invoice prefix defaults to AGP.
+- Uses the existing unique owner key for a single-row upsert and updates `updated_at`.
+- Does not change settings reads, table grants, RLS, or storefront configuration.
+- Adds a rollback-based staging test for insert, update/upsert, defaults, invalid names/currency, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
