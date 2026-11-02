@@ -80,3 +80,19 @@ Do not prepare a final REVOKE migration from raw ACL arrays alone. Effective pri
 4. Capture and review effective ACL outputs.
 5. Only then prepare a narrow ACL migration that preserves invoker RPC requirements.
 6. Do not run SQL on production, merge to `main`, deploy, or onboard another shop without explicit approval.
+
+
+## 6. Expanded read-only evidence capture
+
+Added `accounting/ERP-ACL-EXECUTION-DEPENDENCY-AUDIT.sql` as a supplemental catalog audit. It remains SELECT-only and is intended for the separate staging project. It adds evidence that the shorter inventory does not fully lay out in one place:
+
+- Role membership edges that can cause inherited privileges.
+- Raw relation ACL entries with explicit PUBLIC grantee rows.
+- Effective browser/service-role table privileges.
+- Function owner, language, SECURITY DEFINER flag, strictness, volatility, function configuration, and effective EXECUTE.
+- Trigger-to-function mapping, so trigger functions are not confused with browser-callable RPCs.
+- Sequence ownership, sequence privileges, and columns whose defaults invoke `nextval`.
+- Default ACLs by creator role and object type.
+- RLS flags and policy definitions.
+
+The supplemental audit is still an evidence collector, not a permission repair. Its results have not been captured or run in this session. In particular, it does not justify a REVOKE by itself: the exact ACL output must be compared with the live function/trigger dependency inventory and the staging regression suite first.
