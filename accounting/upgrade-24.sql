@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION public.erp_post_return(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
