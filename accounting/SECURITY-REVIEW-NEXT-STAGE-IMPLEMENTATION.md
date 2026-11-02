@@ -143,3 +143,17 @@ This branch work is not production authorization. No live SQL is run by this spe
 - Adds a rollback-based staging regression script for valid insertion, owner binding, defaults, invalid type/status/amount/commission/fee, NULL amount, and missing authentication.
 - Migration and test are prepared only. Neither has been executed; no staging or production runtime test has passed yet.
 - Required deployment pairing: apply `upgrade-16.sql` in the separate staging project before deploying the matching `accounting/app.js` version there.
+
+## 12. Third implementation slice — cash opening balances
+
+- New migration: `upgrade-17.sql`.
+- RPC: `erp_save_cash_opening_balances(p_drawer_opening_balance, p_vodafone_cash_opening_balance, p_instapay_opening_balance)`.
+- The browser handler now calls this RPC instead of sending a direct upsert to `erp_cash_accounts`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives ownership only from `auth.uid()`.
+- Validates all three values are present, nonnegative, and finite.
+- Writes the three canonical cash accounts in one INSERT/UPSERT statement, so partial saves cannot occur.
+- Keeps canonical account codes/names on the database side.
+- Preserves the existing cash opening-balance trigger: once movements exist, changing an opening balance is rejected and the user must record a cash movement instead.
+- Does not create or edit cash movements, and does not alter cash balance or transfer triggers.
+- Adds a rollback-based staging test for all three accounts, negative/NULL/NaN rejection, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
