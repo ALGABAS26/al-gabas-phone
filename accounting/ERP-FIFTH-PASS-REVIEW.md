@@ -195,3 +195,14 @@ The trigger/helper functions introduced in upgrades 10–12 also lack explicit E
 This is a **static migration-source finding**, not proof that the current production database still has these ACLs: later migrations, manual grants, default privileges, ownership, and role membership can change effective permissions. The existing SELECT-only `ERP-ACL-EXECUTION-DEPENDENCY-AUDIT.sql` remains the authoritative staging evidence collection. No broad revoke migration has been drafted because exact function signatures, PUBLIC/anon effective privileges, role membership, trigger dependencies, and default ACLs must be reviewed first.
 
 Upgrade 14's `erp_my_shop_profile()` is the only SECURITY DEFINER function found in the reviewed migration range. It explicitly revokes PUBLIC/anon and grants authenticated, but its staging behavior and safe search_path configuration remain part of the separate SECURITY DEFINER review. No production ACL changes were made.
+
+
+## Upgrade 27 implementation note — SECURITY DEFINER shop profile disclosure
+
+Static review of `upgrade-14.sql` found that `erp_my_shop_profile()` is SECURITY DEFINER and returns subscription status/expiry for every active membership role. This is broader than the table-level subscription SELECT policy introduced in the same migration, which permits only shop owners and admins. An active viewer/accountant/sales/technician could therefore receive subscription metadata through the definer function despite lacking direct subscription-table access.
+
+A draft fix now exists in `accounting/upgrade-27.sql`: it retains the function signature, membership-scoped shop profile, SECURITY DEFINER behavior, and authenticated-only EXECUTE, but returns subscription status and expiry only when the current member role is `owner` or `admin`. It also fixes the function search_path to `pg_catalog, public, pg_temp` and keeps relation references schema-qualified.
+
+The rollback staging regression in `accounting/tests/upgrade-27-shop-profile-privilege-regression.sql` verifies that a viewer receives NULL subscription fields while an admin receives the expected subscription metadata. It requires an isolated synthetic auth user with no pre-existing shop memberships.
+
+**Pending verification:** no SQL parser/runtime execution occurred. Test the function under real authenticated JWT claims and confirm the application does not rely on subscription metadata being exposed to non-admin roles. Multi-Shop onboarding remains disabled; this fix does not make the ERP tenant-ready.
