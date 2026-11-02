@@ -1,4 +1,5 @@
 name: Build Al Gabas Store Android APK
+
 on:
   workflow_dispatch:
   push:
@@ -8,23 +9,28 @@ on:
       - "package.json"
       - "capacitor.config.json"
       - ".github/workflows/android-apk.yml"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
+
       - name: Install dependencies
         run: npm install
+
       - name: Add Android platform and generate branded icons
         run: |
           mkdir -p www assets
@@ -34,25 +40,87 @@ jobs:
           npx cap add android
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           npx cap sync android
-      - name: Build debug APK
+
+      - name: Configure Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ runner.temp }}/al-gabas-upload-key.jks
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing ANDROID_KEYSTORE_BASE64 secret" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing ANDROID_KEYSTORE_PASSWORD secret" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing ANDROID_KEY_ALIAS secret" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing ANDROID_KEY_PASSWORD secret" && exit 1)
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
+          keytool -list -keystore "$KEYSTORE_FILE" -storetype JKS -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          if "signingConfigs {" in s:
+              raise SystemExit("Signing config already exists; refusing to duplicate it.")
+          match = re.search(r"(?m)^(\\s*)buildTypes\\s*\\{", s)
+          if not match:
+              raise SystemExit("Could not find buildTypes block in android/app/build.gradle")
+          indent = match.group(1)
+          signing = (
+              indent + "signingConfigs {\\n"
+              + indent + "    release {\\n"
+              + indent + "        storeFile file(System.getenv('KEYSTORE_FILE'))\\n"
+              + indent + "        storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')\\n"
+              + indent + "        keyAlias System.getenv('ANDROID_KEY_ALIAS')\\n"
+              + indent + "        keyPassword System.getenv('ANDROID_KEY_PASSWORD')\\n"
+              + indent + "    }\\n"
+              + indent + "}\\n\\n"
+          )
+          s = s[:match.start()] + signing + s[match.start():]
+          build_types = re.search(r"(?m)^\\s*buildTypes\\s*\\{", s)
+          if not build_types:
+              raise SystemExit("Could not find buildTypes block")
+          release = re.search(r"(?m)^(\\s*)release\\s*\\{", s[build_types.end():])
+          if not release:
+              raise SystemExit("Could not find release build type")
+          release_end = build_types.end() + release.end()
+          release_indent = release.group(1) + "    "
+          s = s[:release_end] + "\\n" + release_indent + "signingConfig signingConfigs.release" + s[release_end:]
+          p.write_text(s)
+          PYCODE
+
+      - name: Build signed release APK and AAB
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
-      - name: Build release bundle (unsigned preview only)
-        working-directory: android
+          ./gradlew --no-daemon assembleRelease bundleRelease
+
+      - name: Verify signed release APK and AAB
         run: |
-          chmod +x gradlew
-          ./gradlew bundleRelease
-      - name: Upload APK
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          test -f "$APK"
+          test -f "$AAB"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          jarsigner -verify -verbose -certs "$AAB" >/dev/null
+          echo "APK and AAB signature checks passed."
+
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: al-gabas-store-android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
-      - name: Upload unsigned AAB preview
+          name: al-gabas-store-signed-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload signed AAB for Google Play
         uses: actions/upload-artifact@v4
         with:
-          name: al-gabas-store-unsigned-aab-preview
+          name: al-gabas-store-signed-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 14
+          if-no-files-found: error
+          retention-days: 30
