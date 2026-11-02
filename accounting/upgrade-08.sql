@@ -84,7 +84,7 @@ begin
   v_qty:=(v_item->>'quantity')::integer;
   if v_qty<=0 then raise exception 'كمية المرتجع غير صحيحة'; end if;
   if p_return_type='sale' then
-   select product_id,product_name,quantity-unit_price*0 as dummy,unit_price into v_orig from public.erp_sales_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
+   select product_id,product_name,quantity,unit_price into v_orig from public.erp_sales_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
   else
    select product_id,product_name,quantity,unit_cost as unit_price into v_orig from public.erp_purchase_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
   end if;
