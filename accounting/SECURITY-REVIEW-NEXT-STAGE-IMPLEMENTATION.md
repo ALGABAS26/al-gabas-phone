@@ -182,3 +182,15 @@ This branch work is not production authorization. No live SQL is run by this spe
 - Does not alter party-ledger transaction creation, sale/purchase behavior, or party table policies/grants.
 - Adds a rollback-based staging test for customer/supplier creation, default values, owner binding, invalid type/name/balance, and unauthenticated invocation.
 - Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
+
+## 15. Sixth implementation slice — party ledger transactions
+
+- New migration: `upgrade-20.sql`.
+- RPC: `erp_create_party_transaction(p_party_id, p_transaction_date, p_direction, p_amount, p_description)`.
+- The customer/supplier ledger form now calls the RPC instead of directly inserting into `erp_party_transactions`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives `owner_id` only from `auth.uid()`.
+- Validates party ID, date, direction, positive finite amount, and nonblank description.
+- Verifies the selected party belongs to the authenticated owner and takes a key-share lock before inserting the ledger row.
+- Does not alter sale/purchase/return posting or their atomic ledger effects.
+- Adds a rollback-based staging test for increase/decrease entries, missing/foreign party IDs, invalid inputs, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
