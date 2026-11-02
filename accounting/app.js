@@ -173,7 +173,9 @@ async function loadPurchases(){
  $("#purchase-supplier").innerHTML='<option value="">مورد نقدي / غير محدد</option>'+(sr.data||[]).map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join("");
  $("#purchase-no").value=purchaseInvoiceNo();$("#purchase-date").value=localDate();
  if(!$("#purchase-lines").children.length)purchaseAddLine();
- $("#purchases-body").innerHTML=(ir.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-purchase\" data-id=\""+x.id+"\">طباعة</button></td></tr>").join("")||"<tr><td colspan='6'>لا توجد فواتير شراء.</td></tr>";
+ const invoiceIds=(ir.data||[]).map(x=>x.id);let itemStats={};
+ if(invoiceIds.length){const {data:its,error:itemsError}=await db.from("erp_purchase_invoice_items").select("invoice_id,quantity").in("invoice_id",invoiceIds);if(itemsError){notice("تعذر تحميل عدد الأصناف في فواتير الشراء: "+itemsError.message,true);return;}(its||[]).forEach(it=>{if(!itemStats[it.invoice_id])itemStats[it.invoice_id]={lines:0,qty:0};itemStats[it.invoice_id].lines++;itemStats[it.invoice_id].qty+=Number(it.quantity||0);});}
+ $("#purchases-body").innerHTML=(ir.data||[]).map(x=>{const st=itemStats[x.id]||{lines:0,qty:0};return "<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+st.lines+" صنف / "+st.qty+" قطعة</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-purchase\" data-id=\""+x.id+"\">طباعة</button></td></tr>";}).join("")||"<tr><td colspan='8'>لا توجد فواتير شراء.</td></tr>";
 }
 $("#purchase-add-line").onclick=purchaseAddLine;
 $("#purchase-lines").oninput=purchaseCalc;
