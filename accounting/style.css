@@ -53,3 +53,5 @@ button{max-width:100%;touch-action:manipulation}
 
 /* Expanded mobile navigation for all ERP modules */
 @media(max-width:850px){.sidebar nav{grid-template-columns:repeat(12,minmax(0,1fr));gap:2px}.nav-item{font-size:15px}.nav-item span{font-size:7px}}
+
+@media(max-width:850px){.sidebar nav{display:flex;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;gap:4px;scrollbar-width:thin;padding:0 2px}.nav-item{flex:0 0 66px;min-width:66px}.nav-item span{font-size:8px}}
