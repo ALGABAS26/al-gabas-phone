@@ -113,7 +113,7 @@ begin
    update public.erp_products set quantity=quantity+v_qty,updated_at=now() where id=v_orig.product_id and owner_id=v_owner;
    update public.erp_product_units set status='in_stock' where owner_id=v_owner and product_id=v_orig.product_id and status='sold' and id in (select id from public.erp_product_units where owner_id=v_owner and product_id=v_orig.product_id and status='sold' order by created_at desc limit v_qty);
   else
-   select * into v_orig from public.erp_purchase_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
+   select id,product_id,product_name,quantity,unit_cost as unit_price into v_orig from public.erp_purchase_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
    update public.erp_products set quantity=quantity-v_qty,updated_at=now() where id=v_orig.product_id and owner_id=v_owner and quantity>=v_qty;
    if not found then raise exception 'المخزون الحالي لا يكفي لمرتجع الشراء'; end if;
   end if;
