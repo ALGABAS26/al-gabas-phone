@@ -48,7 +48,7 @@ declare v_owner uuid:=auth.uid(); v_count uuid; v_item jsonb; v_product public.e
 begin
  if v_owner is null then raise exception 'يجب تسجيل الدخول'; end if;
  if jsonb_typeof(p_items)<>'array' or jsonb_array_length(p_items)=0 then raise exception 'لا توجد أصناف للجرد'; end if;
- if exists(select 1 from jsonb_array_elements(p_items) a, jsonb_array_elements(p_items) b where a->>'product_id'=b->>'product_id' and a is distinct from b) then raise exception 'لا تكرر المنتج في الجرد'; end if;
+ if exists(select 1 from jsonb_array_elements(p_items) with ordinality a(value,n), jsonb_array_elements(p_items) with ordinality b(value,n) where a.n<b.n and a.value->>'product_id'=b.value->>'product_id') then raise exception 'لا تكرر المنتج في الجرد'; end if;
  insert into public.erp_stock_counts(owner_id,count_date,notes) values(v_owner,coalesce(p_count_date,current_date),nullif(trim(p_notes),'')) returning id into v_count;
  for v_item in select value from jsonb_array_elements(p_items) loop
   select * into v_product from public.erp_products where id=(v_item->>'product_id')::uuid and owner_id=v_owner for update;
