@@ -23,6 +23,8 @@ DECLARE
   v_before_qty integer;
   v_after_qty integer;
   v_returned integer;
+  v_sale_original_qty integer;
+  v_purchase_original_qty integer;
 BEGIN
   IF v_owner IS NULL THEN
     RAISE EXCEPTION 'Test setup failed: synthetic auth user is not active';
@@ -42,6 +44,9 @@ BEGIN
     RAISE EXCEPTION 'Sale fixture missing: completed invoice, non-IMEI line, quantity >= 2 required';
   END IF;
 
+  SELECT i.quantity INTO v_sale_original_qty
+  FROM public.erp_sales_invoice_items i WHERE i.id=v_sale_item AND i.owner_id=v_owner;
+
   SELECT quantity INTO v_before_qty
   FROM public.erp_products
   WHERE id=(SELECT product_id FROM public.erp_sales_invoice_items WHERE id=v_sale_item)
@@ -59,7 +64,7 @@ BEGIN
     PERFORM public.erp_post_return(
       'RPC24-SALE-2-'||replace(gen_random_uuid()::text,'-',''),
       'sale',v_sale_invoice,current_date,'Must exceed remaining quantity',
-      jsonb_build_array(jsonb_build_object('invoice_item_id',v_sale_item,'quantity',2)),
+      jsonb_build_array(jsonb_build_object('invoice_item_id',v_sale_item,'quantity',v_sale_original_qty)),
       '[]'::jsonb
     );
   EXCEPTION WHEN OTHERS THEN
@@ -97,6 +102,9 @@ BEGIN
     RAISE EXCEPTION 'Purchase fixture missing: invoice line quantity >= 2 and sufficient stock required';
   END IF;
 
+  SELECT i.quantity INTO v_purchase_original_qty
+  FROM public.erp_purchase_invoice_items i WHERE i.id=v_purchase_item AND i.owner_id=v_owner;
+
   v_return_id := public.erp_post_return(
     'RPC24-PURCHASE-1-'||replace(gen_random_uuid()::text,'-',''),
     'purchase',v_purchase_invoice,current_date,'First partial purchase return',
@@ -109,7 +117,7 @@ BEGIN
     PERFORM public.erp_post_return(
       'RPC24-PURCHASE-2-'||replace(gen_random_uuid()::text,'-',''),
       'purchase',v_purchase_invoice,current_date,'Must exceed remaining quantity',
-      jsonb_build_array(jsonb_build_object('invoice_item_id',v_purchase_item,'quantity',2)),
+      jsonb_build_array(jsonb_build_object('invoice_item_id',v_purchase_item,'quantity',v_purchase_original_qty)),
       NULL
     );
   EXCEPTION WHEN OTHERS THEN
