@@ -125,3 +125,20 @@ The regression test requires a synthetic user's test product with at least one o
 **Important limitations:** this is a proposed migration, not an applied database change. The test has not been run. Existing historical sale mappings are not guessed or backfilled. Before staging application, confirm the deployed schema includes the referenced sale-unit mapping table and the existing trigger/function definitions from upgrades 11–12. After staging, run the regression plus the full sales/returns/accounting suite and inspect the resulting sale-line reads/exports for compatibility with the additive column.
 
 This source-level implementation does not resolve concurrent return serialization, purchase/return JSON validation, owner-aware foreign keys, Fawry chronology, or ACL revocation. Those remain open.
+
+
+## Upgrade 24 implementation note — return quantity serialization
+
+A draft implementation now exists in `accounting/upgrade-24.sql`, with a rollback-based staging regression script in `accounting/tests/upgrade-24-return-regression.sql`.
+
+The replacement keeps the existing `erp_post_return(text,text,uuid,date,text,jsonb,jsonb)` signature and preserves the existing business effects:
+- Sale returns restore product stock, insert return header/items, and create the same per-payment cash outflows.
+- Purchase returns reduce product stock and retain the supplier party-ledger decrease entry.
+- Existing return-item triggers remain in place, including exact sale IMEI return-state handling.
+- Purchase-return refund behavior remains unchanged (no cash refund rows).
+
+The function continues to lock the sale/purchase invoice header with `FOR UPDATE`, which serializes calls through this RPC for the same invoice. It additionally locks every requested original invoice line in ascending UUID order before checking cumulative returned quantity. This makes line-level serialization explicit and avoids order-dependent line-lock acquisition for multi-line returns. SQL NULL and malformed item/payment JSON are rejected before casts or writes.
+
+The staging regression script covers partial sale and purchase returns followed by rejected over-returns, verifies the rejected attempt did not change returned quantity or sale inventory, and checks SQL NULL rejection. It includes a separate two-session concurrency procedure because the single-transaction test cannot simulate two concurrent sessions.
+
+**Pending verification:** the migration and test have not been executed or parsed by PostgreSQL in this chat. The two-session concurrency procedure, full IMEI return suite, cash/party-ledger assertions, and staging schema compatibility remain unverified. The existing random UUID cash source identity for each sale refund payment is deliberately preserved here and remains a separate traceability improvement. No production SQL was run.
