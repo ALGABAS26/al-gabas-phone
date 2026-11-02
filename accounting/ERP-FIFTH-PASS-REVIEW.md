@@ -206,3 +206,30 @@ A draft fix now exists in `accounting/upgrade-27.sql`: it retains the function s
 The rollback staging regression in `accounting/tests/upgrade-27-shop-profile-privilege-regression.sql` verifies that a viewer receives NULL subscription fields while an admin receives the expected subscription metadata. It requires an isolated synthetic auth user with no pre-existing shop memberships.
 
 **Pending verification:** no SQL parser/runtime execution occurred. Test the function under real authenticated JWT claims and confirm the application does not rely on subscription metadata being exposed to non-admin roles. Multi-Shop onboarding remains disabled; this fix does not make the ERP tenant-ready.
+
+
+## Upgrade 26 source-to-source comparison — purchase RPC
+
+A direct comparison was completed between the original `erp_create_purchase(text,date,uuid,numeric,text,jsonb,jsonb)` in `upgrade-12.sql` and its hardened replacement in `upgrade-26.sql`.
+
+The replacement retains the original successful-path operations and order:
+- Supplier lookup remains owner-scoped and row-locked.
+- Product rows remain owner-scoped and locked before stock/cost calculations.
+- Weighted-average cost calculation and product quantity update are retained.
+- Purchase invoice and invoice-item rows retain the same values and relationships.
+- IMEI normalization, Luhn checks, product-unit inserts, and purchase-line unit mappings are retained.
+- Supplier ledger increase/decrease entries retain their original amounts and descriptions.
+- Purchase payment rows and matching cash outflow rows retain their source identity and account/date behavior.
+- The RPC still returns the purchase invoice UUID and retains the original signature.
+
+The replacement adds pre-write validation for SQL NULL/non-array JSON payloads, item/payment object shapes, UUID/quantity/cost syntax, IMEI element types, account codes, and finite/nonnegative numeric values. This was a static source comparison only; it does not prove equivalence against the deployed database or every client payload.
+
+**Still required in staging:** run the positive-path purchase regression with ordinary and IMEI-tracked products; assert weighted-average cost, supplier balance, invoice totals, payment rows, cash movement linkage, IMEI uniqueness/mapping, and full rollback on a rejected late-stage IMEI insert. PostgreSQL parsing/runtime remains unverified.
+
+## Owner-aware foreign-key preflight audit
+
+Added `accounting/ERP-OWNER-FK-PREFLIGHT-AUDIT.sql`.
+
+The script is SELECT-only. It inventories foreign keys between `public.erp_*` tables where both sides have `owner_id`, flags relationships whose FK column mapping omits `owner_id`, and emits separate orphan/cross-owner SELECT checks for manual execution. It also inventories existing primary/unique keys to support review of candidate composite constraints.
+
+The script does not execute generated SQL, alter schema/data/grants, inspect `public.products`, or prove that a candidate relationship is exploitable. Nullable links and intentional relationship semantics must be reviewed. No composite FK migration has been drafted; actual staging output and row-level checks are required first.
