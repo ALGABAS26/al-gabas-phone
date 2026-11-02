@@ -8,7 +8,7 @@ Status: **static repository review only**. No Supabase production queries, SQL m
 - Production/default branch: `main`
 - Review branch: `erp-security-fixes-draft`
 - Compared refs: draft branch is 1 commit ahead of main and 0 behind.
-- The only file added on the review branch at the time of comparison was `accounting/WRITE-PATH-HARDENING-DRAFT.md`; no application or SQL code changes were present on that branch.
+- The review branch contains two documentation-only commits: `accounting/WRITE-PATH-HARDENING-DRAFT.md` and this report. No application or SQL code changes are present on that branch.
 - Main branch contains `accounting/app.js`, `schema.sql`, and upgrades through `upgrade-14.sql`.
 
 ## Scope and preservation boundaries
@@ -95,3 +95,39 @@ Do not revoke the direct-write privileges until all eight write paths have been 
 
 ## Execution status
 **No production changes have been made.** This report records static findings and the safe order of work; it is not evidence that any test has passed.
+
+
+## Second-pass audit addendum (2026-11-02)
+
+This addendum is based on reading the actual SQL definitions in `main` (upgrades 02-14) and the current browser write handlers in `accounting/app.js`. It remains static review only.
+
+### Verified branch state correction
+- Current comparison is `erp-security-fixes-draft` against `main`: **2 commits ahead, 0 behind**.
+- Those two commits add this report and `WRITE-PATH-HARDENING-DRAFT.md`; no executable app or SQL files have been changed on the review branch.
+
+### Confirmed security/integrity issue: owner-scoped RLS does not guarantee same-owner foreign-key relationships
+- Several tables use a foreign key to a parent row's UUID alone, while storing a separate `owner_id`. RLS checks the child row's `owner_id=auth.uid()`, but that alone does not prove the referenced parent belongs to the same owner.
+- Concrete examples include `erp_party_transactions.party_id`, `erp_sales_invoice_items.product_id`, `erp_purchase_invoice_items.product_id`, `erp_stock_count_items.count_id/product_id`, and return-related parent/product references. The invoice RPCs perform owner-scoped lookups for their normal paths, but direct authenticated table writes remain granted on many ERP tables.
+- `erp_sales_invoice_item_units` has owner-scoped RLS and foreign keys, but unlike the purchase-unit mapping table it has no equivalent trigger validating that the invoice line and product unit both belong to `new.owner_id` and that their product IDs match.
+- `erp_purchase_invoice_item_units` does have `erp_guard_purchase_unit_link()`, which explicitly validates line owner, unit owner, and product match. This is a useful pattern, but it does not automatically protect other tables.
+- Required remediation: add composite owner-aware foreign keys where practical, or narrowly scoped BEFORE triggers for every cross-table relationship that cannot be expressed safely as a composite FK. Test direct authenticated writes as two different users. Do not assume RLS alone prevents cross-owner references.
+
+### Confirmed IMEI sale-linking edge case to test before release
+- `erp_link_sold_units_to_sale_line()` selects the oldest units for a product where `status='sold'` and no sale-line mapping exists. The trigger comment describes these as newly sold units, but the query itself does not distinguish units sold by the current invoice from older sold-but-unlinked units.
+- If any tracked devices were sold before upgrade 11, a later sale can potentially attach an older unlinked serial to a new invoice line. This is a static risk requiring a targeted regression test and a safer transaction-scoped selection mechanism before relying on the mapping for returns. Do not rewrite or disable the trigger without a migration plan and tests.
+
+### Additional confirmed details
+- The cash movement balance trigger in upgrade 10 locks the affected cash-account row(s) and checks the resulting balance for inserts/updates/deletes. This is an important safeguard and must be retained when replacing direct cash-movement writes.
+- The Fawry close function in upgrade 03 (the later signature including `p_funding_account`) uses a stable `fawry_topup` source ID equal to the close row ID and upserts/deletes that movement, preserving one top-up movement per close. The remaining risks are close-row concurrency and historical-chain consistency, not loss of top-up idempotency in the normal function path.
+- A sale return can contain multiple refund payment rows. Therefore, simply changing every cash movement's `source_id` to the same return UUID would collide with the existing unique key on `(owner_id,source_type,source_id)`. Stable return traceability needs a per-refund-payment identity or an explicit return/payment link, not one shared source ID.
+- The app's eight direct write handlers were re-counted in `accounting/app.js`; their exact locations are documented in `WRITE-PATH-HARDENING-DRAFT.md`. Read/select flows are not included in that count.
+
+### Updated implementation priority
+1. Design owner-aware relationship integrity for direct-write-capable child tables; add the missing sale-unit mapping guard.
+2. Fix/validate the sale IMEI mapping algorithm against pre-upgrade unlinked sold units.
+3. Move the eight direct-write handlers to atomic owner-derived RPCs; preserve the cash balance trigger and existing UI refresh behavior.
+4. Harden NULL/type/range checks and Fawry close serialization/history policy.
+5. Design return refund traceability with one stable identity per refund payment.
+6. Stage and execute the two-user, IMEI legacy-data, cash concurrency, and full regression matrix before any production rollout.
+
+No SQL has been run and no production data, grants, app code, or storefront resources have been changed.
