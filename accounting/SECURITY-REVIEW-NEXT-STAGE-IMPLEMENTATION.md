@@ -157,3 +157,16 @@ This branch work is not production authorization. No live SQL is run by this spe
 - Does not create or edit cash movements, and does not alter cash balance or transfer triggers.
 - Adds a rollback-based staging test for all three accounts, negative/NULL/NaN rejection, and unauthenticated invocation.
 - Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
+
+## 13. Fourth implementation slice — manual cash movements
+
+- New migration: `upgrade-18.sql`.
+- RPC: `erp_create_manual_cash_movement(p_movement_date, p_direction, p_amount, p_description, p_account_code)`.
+- The browser caller now invokes the RPC instead of directly inserting into `erp_cash_movements`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives `owner_id` only from `auth.uid()`.
+- The server fixes `source_type='manual'` and generates `source_id`; neither is accepted from the client.
+- Validates date, direction, positive finite amount, one of the three known cash accounts, and nonblank description.
+- Leaves the existing `erp_guard_cash_movement_balance` trigger intact. The trigger continues to lock the cash account and reject outflows that would make its balance negative.
+- Does not modify transfer, Fawry top-up, sale, purchase, expense, or return cash movements.
+- Adds a rollback-based staging test for manual inflow/outflow, resulting balance, insufficient funds, invalid inputs, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
