@@ -142,3 +142,19 @@ The function continues to lock the sale/purchase invoice header with `FOR UPDATE
 The staging regression script covers partial sale and purchase returns followed by rejected over-returns, verifies the rejected attempt did not change returned quantity or sale inventory, and checks SQL NULL rejection. It includes a separate two-session concurrency procedure because the single-transaction test cannot simulate two concurrent sessions.
 
 **Pending verification:** the migration and test have not been executed or parsed by PostgreSQL in this chat. The two-session concurrency procedure, full IMEI return suite, cash/party-ledger assertions, and staging schema compatibility remain unverified. The existing random UUID cash source identity for each sale refund payment is deliberately preserved here and remains a separate traceability improvement. No production SQL was run.
+
+
+## Upgrade 25 implementation note — Fawry close chronology
+
+A draft implementation now exists in `accounting/upgrade-25.sql`, with a rollback-based staging regression script in `accounting/tests/upgrade-25-fawry-chronology-regression.sql`.
+
+The replacement keeps the existing RPC signature and stable close UUID as the `fawry_topup` cash-movement `source_id`. It adds:
+- Explicit rejection of NULL date, required numeric balances, and funding account; non-finite and negative numeric values are rejected.
+- A transaction-level advisory lock scoped to the authenticated owner, serializing all Fawry close writes for that owner.
+- Revalidation of the nearest earlier close before writing.
+- A successor check so editing/inserting a historical close cannot silently break the next saved close's opening balance.
+- Existing upsert and source-linked cash movement behavior is retained.
+
+The staging regression covers predecessor/successor continuity, rejection of a historical edit that breaks the next close, and NULL input rejection. It also documents a two-session adjacent-day concurrency procedure.
+
+**Pending verification:** migration and test have not been run or parsed by PostgreSQL in this chat. The two-session test, cash-balance trigger interaction when a nonzero top-up is saved/edited/deleted, and staging schema compatibility remain unverified. The owner advisory lock only coordinates callers using this RPC; direct table writes remain possible under the existing authenticated table grants and must be addressed in the broader write-path/ACL hardening package.
