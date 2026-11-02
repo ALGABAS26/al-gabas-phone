@@ -18,7 +18,7 @@ async function loadShopProfile(){
   if(error)throw error;
   shopProfile=Array.isArray(data)&&data.length?data[0]:null;
   if(!shopProfile){chip.textContent="المحل غير مربوط";chip.title="راجع عضوية المحل في قاعدة البيانات";return;}
-  chip.textContent=(shopProfile.shop_name||"المحل")+" · "+(shopProfile.member_role==="owner"?"مالك":shopProfile.member_role);
+  const roleNames={owner:"مالك",admin:"مدير",accountant:"محاسب",sales:"مبيعات",inventory:"مخزون",technician:"فني",viewer:"مشاهد"};const subNames={trial:"تجريبي",active:"نشط",past_due:"متأخر",suspended:"موقوف",cancelled:"ملغي",expired:"منتهي"};chip.textContent=(shopProfile.shop_name||"المحل")+" · "+(roleNames[shopProfile.member_role]||shopProfile.member_role)+" · "+(subNames[shopProfile.subscription_status]||shopProfile.subscription_status||"بدون اشتراك");
   chip.title="حالة المحل: "+(shopProfile.shop_status||"غير محدد")+" | الاشتراك: "+(shopProfile.subscription_status||"غير محدد");
  }catch(e){shopProfile=null;chip.textContent="تعذر تحميل بيانات المحل";chip.title=e.message||String(e);console.error("Shop profile:",e);}
 }
