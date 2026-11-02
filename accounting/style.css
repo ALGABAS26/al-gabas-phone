@@ -48,3 +48,5 @@ button{max-width:100%;touch-action:manipulation}
 
 /* Home dashboard module launcher */
 .module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}.module-card{min-height:132px;padding:17px 14px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,#fff,#f8f9fc);color:var(--ink);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;text-align:right;transition:transform .15s,border-color .15s,box-shadow .15s}.module-card:active{transform:scale(.98)}.module-card:hover{border-color:var(--gold);box-shadow:0 7px 20px #172a4310}.module-card>span{font-size:26px;line-height:1.2}.module-card b{font-size:14px}.module-card small{font-size:10px;line-height:1.6;color:var(--muted)}@media(max-width:850px){.module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.module-card{min-height:120px;padding:13px 11px}}
+/* Original uploaded logo on the login screen */
+.login-logo{display:block;width:150px;height:150px;max-width:65%;object-fit:contain;background:#fff;border-radius:0;margin:0 auto 8px;padding:0}
