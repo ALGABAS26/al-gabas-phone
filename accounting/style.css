@@ -58,3 +58,6 @@ button{max-width:100%;touch-action:manipulation}
 
 /* Purchase invoice IMEI entry */
 .imei-toggle{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px!important;color:var(--ink)}.imei-toggle input{width:18px!important;min-height:18px!important;accent-color:var(--gold)}.purchase-imeis{display:block;width:100%;min-width:190px;min-height:58px;margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px;resize:vertical}.imei-help{display:block;margin-top:5px;font-size:10px}
+
+/* Multi-shop identity header */
+.topbar-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.shop-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);font-size:11px;font-weight:800;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop-chip:before{content:'●';color:#21966b;font-size:9px}@media(max-width:600px){.topbar-meta{align-items:flex-end;flex-direction:column;gap:5px}.shop-chip{max-width:190px;padding:6px 9px}}
