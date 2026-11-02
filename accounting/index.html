@@ -111,7 +111,7 @@
 <label>المورد<select id="purchase-supplier"><option value="">مورد نقدي / غير محدد</option></select></label><label>ملاحظات<input id="purchase-notes" placeholder="اختياري"></label>
 </div>
 <div class="table-head"><h3>الأصناف المشتراة</h3><button type="button" class="secondary" id="purchase-add-line">＋ إضافة صنف</button></div>
-<div class="table-wrap"><table><thead><tr><th>المنتج</th><th>الكمية</th><th>تكلفة الوحدة</th><th>الإجمالي</th><th></th></tr></thead><tbody id="purchase-lines"></tbody></table></div><p class="muted tiny" id="purchase-items-count">عدد الأصناف المختلفة: 0 — إجمالي عدد القطع: 0</p>
+<div class="table-wrap"><table><thead><tr><th>المنتج / IMEI</th><th>الكمية</th><th>تكلفة الوحدة</th><th>الإجمالي</th><th></th></tr></thead><tbody id="purchase-lines"></tbody></table></div><p class="muted tiny" id="purchase-items-count">عدد الأصناف المختلفة: 0 — إجمالي عدد القطع: 0</p>
 <div class="form-grid" style="margin-top:14px">
 <label>الخصم<input id="purchase-discount" type="number" min="0" step="0.01" value="0"></label>
 <div class="stat"><span>إجمالي الفاتورة</span><b id="purchase-total">0.00 EGP</b></div>
@@ -186,7 +186,7 @@
  ];
  function loadConfigAndApp(){
   const c=document.createElement("script");c.src="../config.js";
-  c.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261102-full-audit";document.body.appendChild(a);};
+  c.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261102-imei-purchase";document.body.appendChild(a);};
   c.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل ملف إعدادات الاتصال config.js.";};
   document.body.appendChild(c);
  }
