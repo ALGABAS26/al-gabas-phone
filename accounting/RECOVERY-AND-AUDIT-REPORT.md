@@ -185,3 +185,13 @@ No migration or database change was executed as part of this inventory.
 - Confirmed the manual cash workflow currently generates a client-side UUID for `source_id`; the replacement should define source identity and idempotency server-side while retaining the cash-balance trigger.
 - This specification is design-only. No SQL migration, executable application change, test execution, Supabase query, production change, or storefront change was performed.
 - Latest review-branch comparison and changed-file inventory must be re-verified after the documentation commit; see the final repository verification below.
+
+
+## Fourth-pass schema inventory and read-only diagnostics (2026-11-02)
+
+- Inspected the existing main-branch documentation before adding new material: `DEPLOYMENT-AND-TEST.md`, `PRODUCTION-SECURITY-REMEDIATION.md`, `SECURITY-REVIEW-NEXT-STAGE.md`, `TENANT-ISOLATION-MATRIX.md`, `TENANT-READINESS-AUDIT.sql`, and `SAAS-ARCHITECTURE-PLAN.md`. These already document the single-owner boundary, reported production ACL observations, frontend compatibility risks, and the need for a separate test project.
+- Confirmed the repository tree on `main` contains `upgrade-02.sql` through `upgrade-14.sql`, but no `upgrade-01.sql`. This is a repository inventory fact only; it does not establish whether a separately supplied or historically executed script existed outside the current tree.
+- Reviewed SQL definitions and observed simple foreign keys that reference parent IDs without including owner_id, including party transactions to parties, invoice payments to invoices, invoice items to products, stock-count items to counts/products, and IMEI mapping rows to invoice items/product units. Exact full inventory is available in the new diagnostic script's query 1; do not assume this summary is exhaustive.
+- Added `accounting/ERP-RELATIONSHIP-READONLY-AUDIT.sql`. It contains SELECT-only catalog/data diagnostics for FK definitions, indexes, owner/shop columns, generated cross-owner count queries for simple owner-bearing FKs, duplicate IMEI counts (without returning IMEI values), triggers, RLS policies, function EXECUTE ACLs, default privileges, and IMEI-related function definitions.
+- The generated SQL in query 4 is returned as text and is not executed by the audit script. Review generated statements before running them; only run the SELECT statements in an appropriate review/test project.
+- No live database query was executed, no SQL was run in Supabase, and no application/production changes were made.
