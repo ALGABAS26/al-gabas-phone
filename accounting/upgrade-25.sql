@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION public.erp_save_fawry_daily_close(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
