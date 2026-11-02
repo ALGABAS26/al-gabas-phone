@@ -76,7 +76,7 @@ FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 CROSS JOIN LATERAL aclexplode(COALESCE(
     c.relacl,
-    acldefault(CASE WHEN c.relkind = 'S' THEN 'S' ELSE 'r' END, c.relowner)
+    acldefault((CASE WHEN c.relkind = 'S' THEN 'S' ELSE 'r' END)::"char", c.relowner)
 )) x
 LEFT JOIN pg_roles grantee_role ON grantee_role.oid = x.grantee
 LEFT JOIN pg_roles grantor_role ON grantor_role.oid = x.grantor
