@@ -7,8 +7,8 @@ Status: **static repository review only**. No Supabase production queries, SQL m
 - Repository: `ALGABAS26/al-gabas-phone`
 - Production/default branch: `main`
 - Review branch: `erp-security-fixes-draft`
-- Compared refs: draft branch is 1 commit ahead of main and 0 behind.
-- The review branch contains two documentation-only commits: `accounting/WRITE-PATH-HARDENING-DRAFT.md` and this report. No application or SQL code changes are present on that branch.
+- The branch comparison changes as documentation commits are added; the latest verified comparison is recorded in the final addendum below.
+- The review branch contains documentation-only review artifacts. No application or SQL code changes are present on that branch.
 - Main branch contains `accounting/app.js`, `schema.sql`, and upgrades through `upgrade-14.sql`.
 
 ## Scope and preservation boundaries
@@ -102,8 +102,8 @@ Do not revoke the direct-write privileges until all eight write paths have been 
 This addendum is based on reading the actual SQL definitions in `main` (upgrades 02-14) and the current browser write handlers in `accounting/app.js`. It remains static review only.
 
 ### Verified branch state correction
-- Current comparison is `erp-security-fixes-draft` against `main`: **2 commits ahead, 0 behind**.
-- Those two commits add this report and `WRITE-PATH-HARDENING-DRAFT.md`; no executable app or SQL files have been changed on the review branch.
+- At the time of this second-pass addendum, the comparison was 2 commits ahead and 0 behind. A later addendum below records the latest verified branch state.
+- No executable app or SQL files had been changed on the review branch.
 
 ### Confirmed security/integrity issue: owner-scoped RLS does not guarantee same-owner foreign-key relationships
 - Several tables use a foreign key to a parent row's UUID alone, while storing a separate `owner_id`. RLS checks the child row's `owner_id=auth.uid()`, but that alone does not prove the referenced parent belongs to the same owner.
@@ -175,3 +175,13 @@ These are not all proven exploitable through the normal RPCs: sale, purchase, an
 6. For every new RPC, explicitly set `search_path`, validate null/type/range, revoke default `PUBLIC`/anon EXECUTE on the exact function signature, and grant only intended roles.
 
 No migration or database change was executed as part of this inventory.
+
+
+## Third-pass implementation specification addendum (2026-11-02)
+
+- Re-scanned `accounting/app.js` for direct write calls. Exactly eight write-like call sites were found: seven INSERT workflows plus cash-account and shop-settings UPSERTs (the product workflow has two sequential INSERTs inside one handler).
+- Added `accounting/ERP-SECURITY-REMEDIATION-PLAN.md` on the review branch. It records the current browser payload fields, proposed RPC responsibilities, preservation requirements, validation rules, migration order, least-privilege rollout gates, and staging regression suite.
+- Confirmed a critical product workflow behavior: product insertion currently succeeds before the optional IMEI-unit insertion is attempted. If the second request fails, the product remains without its tracked unit. The proposed replacement must be one database transaction.
+- Confirmed the manual cash workflow currently generates a client-side UUID for `source_id`; the replacement should define source identity and idempotency server-side while retaining the cash-balance trigger.
+- This specification is design-only. No SQL migration, executable application change, test execution, Supabase query, production change, or storefront change was performed.
+- Latest review-branch comparison and changed-file inventory must be re-verified after the documentation commit; see the final repository verification below.
