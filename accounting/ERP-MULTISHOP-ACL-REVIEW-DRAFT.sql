@@ -144,3 +144,54 @@ SELECT
 --   accounting/ERP-MULTISHOP-IMPLEMENTATION-PACKAGE.md
 -- Do not execute any permission-changing SQL until an exact migration has
 -- been reviewed against the captured ACL output and tested in a separate project.
+
+-- 8) Effective privileges, including PUBLIC inheritance.
+-- This is intentionally separate from raw ACL arrays above. It answers what
+-- each role can actually do after inherited grants are considered.
+SELECT
+    c.relname AS table_name,
+    r.rolname AS checked_role,
+    has_table_privilege(r.rolname, c.oid, 'SELECT') AS can_select,
+    has_table_privilege(r.rolname, c.oid, 'INSERT') AS can_insert,
+    has_table_privilege(r.rolname, c.oid, 'UPDATE') AS can_update,
+    has_table_privilege(r.rolname, c.oid, 'DELETE') AS can_delete,
+    has_table_privilege(r.rolname, c.oid, 'TRUNCATE') AS can_truncate,
+    has_table_privilege(r.rolname, c.oid, 'REFERENCES') AS can_references,
+    has_table_privilege(r.rolname, c.oid, 'TRIGGER') AS can_trigger,
+    has_table_privilege(r.rolname, c.oid, 'MAINTAIN') AS can_maintain
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+CROSS JOIN pg_roles r
+WHERE n.nspname = 'public'
+  AND left(c.relname, 4) = 'erp_'
+  AND c.relkind IN ('r','p')
+  AND r.rolname IN ('anon','authenticated','service_role')
+ORDER BY c.relname, r.rolname;
+
+-- 9) Effective function EXECUTE by client roles, including PUBLIC inheritance.
+SELECT
+    p.oid::regprocedure AS exact_signature,
+    p.prosecdef AS security_definer,
+    has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_can_execute,
+    has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_can_execute
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND left(p.proname, 4) = 'erp_'
+ORDER BY p.proname, exact_signature::text;
+
+-- 10) Effective sequence privileges for ERP sequences.
+SELECT
+    c.relname AS sequence_name,
+    r.rolname AS checked_role,
+    has_sequence_privilege(r.rolname, c.oid, 'USAGE') AS can_use,
+    has_sequence_privilege(r.rolname, c.oid, 'SELECT') AS can_select,
+    has_sequence_privilege(r.rolname, c.oid, 'UPDATE') AS can_update
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+CROSS JOIN pg_roles r
+WHERE n.nspname = 'public'
+  AND left(c.relname, 4) = 'erp_'
+  AND c.relkind = 'S'
+  AND r.rolname IN ('anon','authenticated','service_role')
+ORDER BY c.relname, r.rolname;
