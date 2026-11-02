@@ -104,3 +104,24 @@ The stable close UUID used as the top-up movement source is valuable for idempot
 ## Verification status
 
 This document records static findings from repository source only. It does not claim that the SQL was run, that live data was inspected, that migrations were applied, or that runtime tests passed.
+
+
+## Upgrade 23 implementation note — pending staging verification
+
+A draft implementation now exists in `accounting/upgrade-23.sql`, with a rollback-based staging test in `accounting/tests/upgrade-23-sale-imei-regression.sql`.
+
+It addresses F5-03 and F5-04 at source level:
+
+- The sale RPC captures the exact unit UUIDs returned by the same UPDATE that changes those units from `in_stock` to `sold`.
+- Those exact UUIDs are stored on the sale line in the additive `imei_unit_ids uuid[]` column.
+- The existing AFTER INSERT trigger maps only those supplied UUIDs; it no longer searches the broad pool of all sold/unlinked units.
+- Tracked-product sale lines fail closed if the exact number of selected UUIDs is missing, duplicated, already mapped, in the wrong state, or belongs to another owner/product.
+- A new mapping guard checks invoice-line owner/product and unit owner/product/status before mapping writes.
+- The sale RPC signature and accounting side effects (invoice, stock, split payments and cash movements) are preserved.
+- Sale JSON arguments now explicitly reject SQL NULL, non-array payloads, null/scalar item/payment elements, missing IDs, malformed quantities/prices and invalid payment account codes before casts.
+
+The regression test requires a synthetic user's test product with at least one older sold-but-unlinked unit and one in-stock unit. It checks that the new sale links the newly selected in-stock unit and leaves the legacy unit untouched; it also checks SQL NULL and malformed JSON rejection.
+
+**Important limitations:** this is a proposed migration, not an applied database change. The test has not been run. Existing historical sale mappings are not guessed or backfilled. Before staging application, confirm the deployed schema includes the referenced sale-unit mapping table and the existing trigger/function definitions from upgrades 11–12. After staging, run the regression plus the full sales/returns/accounting suite and inspect the resulting sale-line reads/exports for compatibility with the additive column.
+
+This source-level implementation does not resolve concurrent return serialization, purchase/return JSON validation, owner-aware foreign keys, Fawry chronology, or ACL revocation. Those remain open.
