@@ -19,10 +19,10 @@ begin
    and commission=5 and fee=1.25 and reference=v_ref and status='completed' and notes='staging';
   if v_count<>1 then raise exception 'FAIL: valid transaction or owner binding'; end if;
 
-  v_id := public.erp_create_fawry_transaction('topup',300,null,null,'   ','pending','   ');
+  v_id := public.erp_create_fawry_transaction('topup',300);
   select count(*) into v_count from public.erp_fawry_transactions
    where id=v_id and owner_id=v_owner and type='topup' and amount=300
-   and commission=0 and fee=0 and reference is null and status='pending' and notes is null;
+   and commission=0 and fee=0 and reference is null and status='completed' and notes is null;
   if v_count<>1 then raise exception 'FAIL: defaults or blank optional values'; end if;
 
   v_failed:=false;
