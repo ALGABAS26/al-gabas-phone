@@ -20,7 +20,7 @@ create or replace function public.erp_save_shop_settings(
 returns uuid
 language plpgsql
 security invoker
-set search_path = pg_catalog, public
+set search_path = pg_catalog, public, pg_temp
 as $function$
 declare
   v_owner uuid := auth.uid();
