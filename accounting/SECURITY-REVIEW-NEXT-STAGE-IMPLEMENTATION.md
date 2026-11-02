@@ -130,3 +130,16 @@ The first workflow is `erp_products` + optional `erp_product_units`.
 ## 10. Release state
 
 This branch work is not production authorization. No live SQL is run by this specification. No shop onboarding is permitted. No storefront object or `public.products` permission is in scope.
+
+## 11. Second implementation slice — Fawry transaction creation
+
+- New migration: `upgrade-16.sql`.
+- RPC: `erp_create_fawry_transaction(p_type, p_amount, p_commission, p_fee, p_reference, p_status, p_notes)`.
+- The browser caller now invokes this RPC instead of directly inserting into `erp_fawry_transactions`.
+- The RPC uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives the owner only from `auth.uid()`.
+- Validates the transaction type and status against the existing table check constraints; requires a positive finite amount and nonnegative finite commission/fee; rejects NULL required values; trims blank reference/notes to NULL.
+- Preserves the existing table schema, owner RLS policy, and authenticated table DML needed by other workflows.
+- Does not alter Fawry daily closing, its stable closing-row source ID, cash movement triggers, or cash account behavior.
+- Adds a rollback-based staging regression script for valid insertion, owner binding, defaults, invalid type/status/amount/commission/fee, NULL amount, and missing authentication.
+- Migration and test are prepared only. Neither has been executed; no staging or production runtime test has passed yet.
+- Required deployment pairing: apply `upgrade-16.sql` in the separate staging project before deploying the matching `accounting/app.js` version there.
