@@ -19,6 +19,8 @@ DECLARE
   v_after_qty integer;
   v_before_movements integer;
   v_after_movements integer;
+  v_before_invoices integer;
+  v_after_invoices integer;
 BEGIN
   IF v_owner IS NULL THEN
     RAISE EXCEPTION 'Test setup failed: synthetic auth user is not active';
@@ -45,6 +47,13 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: NULL expense account accepted'; END IF;
 
+  v_failed := false;
+  BEGIN
+    PERFORM public.erp_record_expense(current_date,'اختبار','NaN'::numeric,'drawer','اختبار');
+  EXCEPTION WHEN OTHERS THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: non-finite expense amount accepted'; END IF;
+
   -- Transfer: NULL account/date-independent fields and non-finite amount rejected.
   v_failed := false;
   BEGIN
@@ -60,11 +69,20 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: NULL transfer amount accepted'; END IF;
 
+  v_failed := false;
+  BEGIN
+    PERFORM public.erp_transfer_cash(current_date,'drawer','instapay','Infinity'::numeric,NULL);
+  EXCEPTION WHEN OTHERS THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: non-finite transfer amount accepted'; END IF;
+
   -- Purchase: malformed top-level JSON must fail before invoice or inventory writes.
   SELECT quantity INTO v_before_qty
   FROM public.erp_products WHERE id=v_product AND owner_id=v_owner;
   SELECT count(*) INTO v_before_movements
   FROM public.erp_cash_movements WHERE owner_id=v_owner;
+  SELECT count(*) INTO v_before_invoices
+  FROM public.erp_purchase_invoices WHERE owner_id=v_owner;
 
   v_failed := false;
   BEGIN
@@ -100,16 +118,56 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: NULL purchase item element accepted'; END IF;
 
+  v_failed := false;
+  BEGIN
+    PERFORM public.erp_create_purchase(
+      'RPC26-SCALAR-ELEMENT-'||replace(gen_random_uuid()::text,'-',''),
+      current_date,v_supplier,0,NULL,
+      jsonb_build_array('not-an-object'),'[]'::jsonb
+    );
+  EXCEPTION WHEN OTHERS THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: scalar purchase item accepted'; END IF;
+
+  v_failed := false;
+  BEGIN
+    PERFORM public.erp_create_purchase(
+      'RPC26-BAD-UUID-'||replace(gen_random_uuid()::text,'-',''),
+      current_date,v_supplier,0,NULL,
+      jsonb_build_array(jsonb_build_object(
+        'product_id','not-a-uuid','quantity',1,'unit_cost',1
+      )), '[]'::jsonb
+    );
+  EXCEPTION WHEN OTHERS THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: invalid product UUID accepted'; END IF;
+
+  v_failed := false;
+  BEGIN
+    PERFORM public.erp_create_purchase(
+      'RPC26-NAN-DISCOUNT-'||replace(gen_random_uuid()::text,'-',''),
+      current_date,v_supplier,'NaN'::numeric,NULL,
+      jsonb_build_array(jsonb_build_object(
+        'product_id',v_product,'quantity',1,'unit_cost',1
+      )), '[]'::jsonb
+    );
+  EXCEPTION WHEN OTHERS THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: NaN purchase discount accepted'; END IF;
+
   SELECT quantity INTO v_after_qty
   FROM public.erp_products WHERE id=v_product AND owner_id=v_owner;
   SELECT count(*) INTO v_after_movements
   FROM public.erp_cash_movements WHERE owner_id=v_owner;
+  SELECT count(*) INTO v_after_invoices
+  FROM public.erp_purchase_invoices WHERE owner_id=v_owner;
   IF v_after_qty IS DISTINCT FROM v_before_qty
-     OR v_after_movements IS DISTINCT FROM v_before_movements THEN
-    RAISE EXCEPTION 'FAIL: rejected purchase changed inventory or cash movements';
+     OR v_after_movements IS DISTINCT FROM v_before_movements
+     OR v_after_invoices IS DISTINCT FROM v_before_invoices THEN
+    RAISE EXCEPTION 'FAIL: rejected purchase changed inventory, invoices, or cash movements';
   END IF;
 
-  RAISE NOTICE 'PASS: expense/transfer NULL guards and purchase JSON validation';
+  RAISE NOTICE 'PASS: expense/transfer NULL and non-finite guards; purchase JSON, UUID, and discount validation';
 END;
 $test$;
 
