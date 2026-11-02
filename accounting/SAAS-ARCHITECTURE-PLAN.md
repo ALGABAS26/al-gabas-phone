@@ -1,6 +1,6 @@
 # AL GABAS STORE — SaaS Multi-Shop Architecture Plan
 
-Status: phased implementation in progress. Upgrade 13 is an additive foundation only; it does not change existing RLS/RPC authorization or enable other shops. Production multi-shop access is not yet enabled.
+Status: phased implementation in progress. Upgrades 13 and 14 have been reported successfully executed by the owner. They provide shop metadata, backfill, and read-only access to the current user's shop profile. Existing ERP RLS/RPC authorization is still owner-based; production multi-shop access is not enabled.
 
 ## 1. Current boundary
 
@@ -97,6 +97,9 @@ Do not apply tenant migrations to the current production Supabase project until:
 - a restorable backup and rollback plan exist;
 - the shop owner explicitly approves the production cutover.
 
-## 9. Upgrade 13 — additive foundation (prepared, not yet confirmed run)\n\n`upgrade-13.sql` creates the shop, membership, subscription, and audit tables; adds nullable `shop_id` columns to the current ERP tables; seeds one initial shop per existing ERP owner; backfills existing rows; and aborts the transaction if any owner-owned row remains unassigned. Existing `owner_id` RLS policies and business RPCs are deliberately left unchanged. New management tables have RLS enabled without client policies, so they remain inaccessible from the app until a later reviewed upgrade adds controlled access.\n\nRun it only after upgrades 08–12 have been applied successfully in order. It is not the multi-tenant release: do not invite another shop or share the current login. A later upgrade must add shop-aware write defaults, membership authorization, composite tenant constraints, role enforcement, and frontend shop selection as one coordinated release.\n\n## 10. Current production caution
+## 9. Upgrade 13 — additive foundation (owner confirmed run)\n\n`upgrade-13.sql` creates the shop, membership, subscription, and audit tables; adds nullable `shop_id` columns to the current ERP tables; seeds one initial shop per existing ERP owner; backfills existing rows; and aborts the transaction if any owner-owned row remains unassigned. Existing `owner_id` RLS policies and business RPCs are deliberately left unchanged. New management tables have RLS enabled without client policies, so they remain inaccessible from the app until a later reviewed upgrade adds controlled access.\n\nThe owner reports that upgrades 08–13 were executed successfully in order. Upgrade 14 adds `erp_my_shop_profile()` and controlled SELECT policies for a user's own shop metadata; the owner reports it was also executed. It is not the multi-tenant release: do not invite another shop or share the current login. A later upgrade must add shop-aware write defaults, membership authorization, composite tenant constraints, role enforcement, and frontend shop selection as one coordinated release.\n\n## 10. Current production caution
 
-The existing `upgrade-08.sql` through `upgrade-12.sql` are also not confirmed applied. They must be validated in a separate test project first and applied in their documented order only after explicit approval. Do not run them or any future SaaS migration on production as an experiment.
+The owner reports `upgrade-08.sql` through `upgrade-14.sql` were executed successfully. This is a user-reported status, not an independent database verification. Before any further tenant migration, create and test against a separate Supabase test project, verify the live schema and row counts, and take a restorable production backup.
+
+
+## 11. Next development stage\n\nThe next safe coding stage is a read-only tenant readiness audit and a test-project migration package. Do not yet add customer sign-up, tenant switching, tenant-scoped write RPCs, or new shop creation in the live app. Existing business RPCs and direct table access remain owner-scoped.\n
