@@ -132,10 +132,10 @@ $("#party-ledger-close").onclick=()=>{$("#party-ledger-panel").hidden=true;activ
 $("#party-tx-form").onsubmit=async e=>{e.preventDefault();if(!activeParty)return;const row={owner_id:session.user.id,party_id:activeParty.id,transaction_date:$("#party-tx-date").value,direction:$("#party-tx-direction").value,amount:Number($("#party-tx-amount").value),description:$("#party-tx-description").value.trim()};const {error}=await db.from("erp_party_transactions").insert(row);if(error){notice("تعذر حفظ الحركة: "+error.message,true);return;}notice("تم تسجيل الحركة في كشف الحساب.");$("#party-tx-form").reset();$("#party-tx-date").value=localDate();await refreshPartyLedger();await loadParties();};
 
 function purchaseInvoiceNo(){return "PUR-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-6);}
-let purchaseProducts=[];
+let purchaseProducts=[],purchaseTrackedProductIds=new Set();
 function purchaseAddLine(){
  const opts='<option value="">اختر المنتج</option>'+purchaseProducts.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join("");
- const tr=document.createElement("tr");tr.innerHTML='<td><select class="purchase-product">'+opts+'</select></td><td><input class="purchase-qty" type="number" min="1" step="1" value="1"></td><td><input class="purchase-cost" type="number" min="0" step="0.01" value="0"></td><td class="purchase-line-total">0.00</td><td><button type="button" class="secondary purchase-remove">حذف</button></td>';
+ const tr=document.createElement("tr");tr.innerHTML='<td><select class="purchase-product">'+opts+'</select><label class="imei-toggle"><input class="purchase-track-imei" type="checkbox"> تتبع IMEI</label><textarea class="purchase-imeis" rows="2" placeholder="جهاز واحد في كل سطر: IMEI الأول، والثاني اختياري" hidden></textarea><small class="muted imei-help">فعّل التتبع للأجهزة التي لها أرقام IMEI.</small></td><td><input class="purchase-qty" type="number" min="1" step="1" value="1"></td><td><input class="purchase-cost" type="number" min="0" step="0.01" value="0"></td><td class="purchase-line-total">0.00</td><td><button type="button" class="secondary purchase-remove">حذف</button></td>';
  $("#purchase-lines").appendChild(tr);purchaseCalc();
 }
 function purchaseCalc(){
@@ -171,6 +171,7 @@ async function loadPurchases(){
  ]);
  if(pr.error||sr.error||ir.error){notice("تعذر تحميل المشتريات: "+(pr.error||sr.error||ir.error).message,true);return;}
  purchaseProducts=pr.data||[];
+ try{const units=await fetchAll("erp_product_units");purchaseTrackedProductIds=new Set(units.map(u=>u.product_id));}catch(e){notice("تعذر تحميل حالة تتبع IMEI: "+e.message,true);return;}
  $("#purchase-supplier").innerHTML='<option value="">مورد نقدي / غير محدد</option>'+(sr.data||[]).map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join("");
  $("#purchase-no").value=purchaseInvoiceNo();$("#purchase-date").value=localDate();
  if(!$("#purchase-lines").children.length)purchaseAddLine();
@@ -179,14 +180,31 @@ async function loadPurchases(){
  $("#purchases-body").innerHTML=(ir.data||[]).map(x=>{const st=itemStats[x.id]||{lines:0,qty:0};return "<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+st.lines+" صنف / "+st.qty+" قطعة</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-purchase\" data-id=\""+x.id+"\">طباعة</button></td></tr>";}).join("")||"<tr><td colspan='8'>لا توجد فواتير شراء.</td></tr>";
 }
 $("#purchase-add-line").onclick=purchaseAddLine;
-$("#purchase-lines").oninput=purchaseCalc;
-$("#purchase-lines").onchange=purchaseCalc;
+$("#purchase-lines").oninput=e=>{if(e.target.classList.contains("purchase-imeis"))return;purchaseCalc();};
+$("#purchase-lines").onchange=e=>{
+ const tr=e.target.closest("tr");
+ if(e.target.classList.contains("purchase-product")&&tr){const checked=purchaseTrackedProductIds.has(e.target.value);tr.querySelector(".purchase-track-imei").checked=checked;tr.querySelector(".purchase-imeis").hidden=!checked;}
+ if(e.target.classList.contains("purchase-track-imei")&&tr)tr.querySelector(".purchase-imeis").hidden=!e.target.checked;
+ purchaseCalc();
+};
 $("#purchase-lines").onclick=e=>{if(e.target.classList.contains("purchase-remove")){e.target.closest("tr").remove();purchaseCalc();}};
 ["purchase-discount","purchase-pay-drawer","purchase-pay-vodafone","purchase-pay-instapay"].forEach(id=>$("#"+id).oninput=purchaseCalc);
 $("#purchase-form").onsubmit=async e=>{
  e.preventDefault();const rows=[...document.querySelectorAll("#purchase-lines tr")];
- const items=rows.map(tr=>({product_id:tr.querySelector(".purchase-product").value,quantity:Number(tr.querySelector(".purchase-qty").value),unit_cost:Number(tr.querySelector(".purchase-cost").value)}));
- if(items.some(x=>!x.product_id||!Number.isInteger(x.quantity)||x.quantity<1||x.unit_cost<0)){notice("راجع الأصناف والكميات وتكلفة الشراء.",true);return;}
+ const items=rows.map(tr=>{
+  const quantity=Number(tr.querySelector(".purchase-qty").value),track=tr.querySelector(".purchase-track-imei").checked,raw=tr.querySelector(".purchase-imeis").value;
+  const imei_units=track?raw.split(/\\r?\\n/).map(line=>{const nums=(line.match(/[0-9٠-٩]{15}/g)||[]).map(digits);return nums.length?{imei1:nums[0],imei2:nums[1]||null}:null;}).filter(Boolean):[];
+  return {product_id:tr.querySelector(".purchase-product").value,quantity,unit_cost:Number(tr.querySelector(".purchase-cost").value),imei_units};
+ });
+ if(items.some(x=>!x.product_id||!Number.isInteger(x.quantity)||x.quantity<1||!Number.isFinite(x.unit_cost)||x.unit_cost<0)){notice("راجع الأصناف والكميات وتكلفة الشراء.",true);return;}
+ for(let i=0;i<items.length;i++){
+  const item=items[i],tr=rows[i];
+  if(tr.querySelector(".purchase-track-imei").checked){
+   const raw=tr.querySelector(".purchase-imeis").value,lines=raw.split(/\\r?\\n/).filter(x=>x.trim());
+   const serials=item.imei_units.flatMap(x=>[x.imei1,x.imei2].filter(Boolean));
+   if(lines.length!==item.quantity||item.imei_units.length!==item.quantity||serials.some(x=>!luhn(x))||new Set(serials).size!==serials.length){notice("أدخل سطرًا لكل جهاز، وكل سطر يحتوي IMEI صحيحًا من 15 رقمًا (والثاني اختياري)، بدون تكرار.",true);return;}
+  }else if(purchaseTrackedProductIds.has(item.product_id)){notice("هذا الصنف مسجل بتتبع IMEI؛ فعّل التتبع وأدخل أرقام الأجهزة.",true);return;}
+ }
  const payments=[["drawer","purchase-pay-drawer"],["vodafone_cash","purchase-pay-vodafone"],["instapay","purchase-pay-instapay"]].map(([account_code,id])=>({account_code,amount:Number($("#"+id).value||0)}));
  const args={p_invoice_no:$("#purchase-no").value.trim(),p_invoice_date:$("#purchase-date").value,p_supplier_id:$("#purchase-supplier").value||null,p_discount:Number($("#purchase-discount").value||0),p_notes:$("#purchase-notes").value.trim()||null,p_items:items,p_payments:payments};
  const btn=e.submitter;if(btn)btn.disabled=true;
