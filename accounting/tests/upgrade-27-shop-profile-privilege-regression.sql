@@ -13,6 +13,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id=v_user) THEN
     RAISE EXCEPTION 'Create the synthetic auth user fixture before running this test';
   END IF;
+  IF EXISTS (SELECT 1 FROM public.erp_shop_memberships WHERE user_id=v_user) THEN
+    RAISE EXCEPTION 'Use an isolated synthetic auth user with no pre-existing shop memberships';
+  END IF;
 
   INSERT INTO public.erp_shops(name,slug,created_by)
   VALUES ('ACL Profile Test','acl-profile-'||replace(gen_random_uuid()::text,'-',''),v_user)
