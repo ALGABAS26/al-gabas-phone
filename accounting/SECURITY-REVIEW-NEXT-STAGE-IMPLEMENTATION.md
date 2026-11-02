@@ -170,3 +170,15 @@ This branch work is not production authorization. No live SQL is run by this spe
 - Does not modify transfer, Fawry top-up, sale, purchase, expense, or return cash movements.
 - Adds a rollback-based staging test for manual inflow/outflow, resulting balance, insufficient funds, invalid inputs, and unauthenticated invocation.
 - Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
+
+## 14. Fifth implementation slice — customer and supplier creation
+
+- New migration: `upgrade-19.sql`.
+- RPC: `erp_create_party(p_party_type, p_name, p_phone, p_address, p_opening_balance, p_notes)`.
+- The party form now calls the RPC instead of directly inserting into `erp_parties`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives ownership only from `auth.uid()`.
+- Validates customer/supplier type, nonblank name, and a non-NULL, nonnegative, finite opening balance.
+- Normalizes blank optional phone/address/notes to NULL.
+- Does not alter party-ledger transaction creation, sale/purchase behavior, or party table policies/grants.
+- Adds a rollback-based staging test for customer/supplier creation, default values, owner binding, invalid type/name/balance, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
