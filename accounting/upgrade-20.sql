@@ -17,7 +17,7 @@ create or replace function public.erp_create_party_transaction(
 returns uuid
 language plpgsql
 security invoker
-set search_path = pg_catalog, public
+set search_path = pg_catalog, public, pg_temp
 as $function$
 declare
   v_owner uuid := auth.uid();
