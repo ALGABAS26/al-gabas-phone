@@ -104,7 +104,7 @@ JOIN pg_namespace n ON n.oid = p.pronamespace
 JOIN pg_language l ON l.oid = p.prolang
 WHERE n.nspname = 'public'
   AND left(p.proname, 4) = 'erp_'
-ORDER BY p.proname, exact_signature::text;
+ORDER BY p.proname, p.oid::regprocedure::text;
 
 -- 6) Expanded function ACL entries. Preserve exact signatures in any future
 -- REVOKE/GRANT statement; never revoke functions by name alone.
@@ -126,7 +126,7 @@ LEFT JOIN pg_roles grantee_role ON grantee_role.oid = x.grantee
 LEFT JOIN pg_roles grantor_role ON grantor_role.oid = x.grantor
 WHERE n.nspname = 'public'
   AND left(p.proname, 4) = 'erp_'
-ORDER BY p.proname, exact_signature::text, grantee;
+ORDER BY p.proname, p.oid::regprocedure::text, grantee;
 
 -- 7) Trigger-to-function dependency map. Trigger functions are not ordinary
 -- client RPCs; do not revoke their EXECUTE privileges indiscriminately.
