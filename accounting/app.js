@@ -1,6 +1,6 @@
 (() => {
 const $=s=>document.querySelector(s),money=n=>Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})+" EGP";
-let db=null,session=null,products=[],fawry=[],stream=null,mode=null,detector=null;
+let db=null,session=null,products=[],fawry=[],stream=null,mode=null,detector=null,shopProfile=null;
 function notice(t,bad){const n=$("#notice");n.hidden=false;n.textContent=t;n.style.background=bad?"#fdecec":"#fff5d9";n.style.color=bad?"#9e2929":"#74571d";}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function digits(s){return String(s||"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g,"");}
@@ -10,7 +10,19 @@ function barcode(){return "AGP"+Date.now().toString().slice(-10)+Math.floor(Math
 function effect(x){let a=Number(x.amount||0);if(x.type==="topup"||x.type==="settlement"||x.type==="reversal")return a;if(x.type==="withdrawal"||x.type==="service")return -a;return 0;}
 function page(name){document.querySelectorAll(".page").forEach(x=>x.hidden=true);$("#page-"+name).hidden=false;document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x.dataset.page===name));$("#page-title").textContent=({dashboard:"لوحة التحكم",products:"المخزون والمنتجات",scanner:"الماسح الذكي",fawry:"حساب ماكينة فوري",cashbox:"الخزنة والأرصدة",sales:"المبيعات",parties:"العملاء والموردين",purchases:"المشتريات",maintenance:"الصيانة",expenses:"المصروفات",reports:"التقارير",settings:"الضبط والإعدادات",stocktake:"جرد المخزون",returns:"المرتجعات",backup:"النسخ والتصدير"})[name];if(name==="products")loadProducts();if(name==="fawry")loadFawryClosing();if(name==="maintenance")loadMaintenance();if(name==="cashbox")loadCashbox();if(name==="sales")loadSales();if(name==="parties")loadParties();if(name==="purchases")loadPurchases();if(name==="expenses")loadExpenses();if(name==="settings")loadSettings();if(name==="reports")loadReports();if(name==="stocktake")loadStocktake();if(name==="returns")loadReturns();}
 async function boot(){try{if(!window.supabase){$("#login-error").textContent="مكتبة الاتصال لم تتحمل. تأكد من الإنترنت ثم حدّث الصفحة.";return;}if(!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){$("#login-error").textContent="إعدادات Supabase غير موجودة في config.js.";return;}db=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const r=await db.auth.getSession();if(r.error)throw r.error;session=r.data.session;if(session)enter();else{$("#login-view").hidden=false;$("#app-view").hidden=true;}db.auth.onAuthStateChange((e,s)=>{session=s;if(s)enter();else{$("#app-view").hidden=true;$("#login-view").hidden=false;}});}catch(e){db=null;$("#login-error").textContent="تعذر تهيئة الاتصال: "+(e.message||e);console.error("Supabase boot:",e);}}
-async function enter(){$("#login-view").hidden=true;$("#app-view").hidden=false;$("#user-email").textContent=session.user.email;$("#today").textContent=new Date().toLocaleDateString("ar-EG");page("dashboard");await dashboard();}
+async function loadShopProfile(){
+ const chip=$("#shop-chip");if(!chip)return;
+ chip.textContent="جارٍ تحميل بيانات المحل...";
+ try{
+  const {data,error}=await db.rpc("erp_my_shop_profile");
+  if(error)throw error;
+  shopProfile=Array.isArray(data)&&data.length?data[0]:null;
+  if(!shopProfile){chip.textContent="المحل غير مربوط";chip.title="راجع عضوية المحل في قاعدة البيانات";return;}
+  chip.textContent=(shopProfile.shop_name||"المحل")+" · "+(shopProfile.member_role==="owner"?"مالك":shopProfile.member_role);
+  chip.title="حالة المحل: "+(shopProfile.shop_status||"غير محدد")+" | الاشتراك: "+(shopProfile.subscription_status||"غير محدد");
+ }catch(e){shopProfile=null;chip.textContent="تعذر تحميل بيانات المحل";chip.title=e.message||String(e);console.error("Shop profile:",e);}
+}
+async function enter(){$("#login-view").hidden=true;$("#app-view").hidden=false;$("#user-email").textContent=session.user.email;$("#today").textContent=new Date().toLocaleDateString("ar-EG");await loadShopProfile();page("dashboard");await dashboard();}
 async function loginAccount(){const btn=$("#login-submit"),err=$("#login-error");err.textContent="";if(!db){err.textContent="الاتصال بقاعدة البيانات لم يكتمل. حدّث الصفحة.";return;}const email=$("#email").value.trim(),password=$("#password").value;if(!email||!password){err.textContent="اكتب البريد الإلكتروني وكلمة المرور.";return;}btn.disabled=true;btn.textContent="جارٍ تسجيل الدخول...";try{const r=await db.auth.signInWithPassword({email,password});if(r.error)err.textContent="تعذر تسجيل الدخول: "+r.error.message;else if(!r.data.session)err.textContent="لم يتم إنشاء جلسة دخول. حاول مرة أخرى.";}catch(e){err.textContent="حدث خطأ في الاتصال: "+(e.message||e);}finally{btn.disabled=false;btn.textContent="تسجيل الدخول";}}
 $("#login-submit").onclick=loginAccount;
 $("#login-form").onsubmit=e=>{e.preventDefault();loginAccount();};
