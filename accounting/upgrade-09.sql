@@ -15,7 +15,7 @@ create index if not exists erp_cash_transfers_owner_date_idx on public.erp_cash_
 alter table public.erp_cash_transfers enable row level security;
 drop policy if exists erp_cash_transfers_owner_all on public.erp_cash_transfers;
 create policy erp_cash_transfers_owner_all on public.erp_cash_transfers for all to authenticated using(owner_id=auth.uid()) with check(owner_id=auth.uid());
-grant select on public.erp_cash_transfers to authenticated;
+grant select,insert on public.erp_cash_transfers to authenticated;
 
 create or replace function public.erp_transfer_cash(
  p_transfer_date date,p_from_account text,p_to_account text,p_amount numeric,p_notes text default null
