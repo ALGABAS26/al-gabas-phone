@@ -233,3 +233,12 @@ Added `accounting/ERP-OWNER-FK-PREFLIGHT-AUDIT.sql`.
 The script is SELECT-only. It inventories foreign keys between `public.erp_*` tables where both sides have `owner_id`, flags relationships whose FK column mapping omits `owner_id`, and emits separate orphan/cross-owner SELECT checks for manual execution. It also inventories existing primary/unique keys to support review of candidate composite constraints.
 
 The script does not execute generated SQL, alter schema/data/grants, inspect `public.products`, or prove that a candidate relationship is exploitable. Nullable links and intentional relationship semantics must be reviewed. No composite FK migration has been drafted; actual staging output and row-level checks are required first.
+
+
+## Consolidated staging runbook and current app source scan
+
+Added `accounting/ERP-STAGING-SECURITY-VALIDATION-RUNBOOK.md` to collect the remaining steps in one ordered staging procedure: read-only relationship/owner-FK/ACL/tenant evidence capture, sequential application of upgrades 15–27 with matching rollback regressions, additional positive-path and two-session concurrency tests, application smoke tests, and release gates.
+
+A fresh static scan of `accounting/app.js` on this branch found the expected 17 RPC names, including the purchase/sale/return, stock-count, cash, Fawry, maintenance, settings, expense, party, and shop-profile calls. The scan found no direct `.from(...).insert/upsert/update/delete` patterns. This is a regex/source scan only, not proof of complete absence of all direct write paths or runtime behavior.
+
+**Execution blocker:** a Supabase connection is not currently active in this session. The Supabase integration has been surfaced for the user to connect. Until it is connected to the intended separate staging project, no live schema evidence, migration execution, PostgreSQL parse/runtime test, or concurrency test can truthfully be reported. The runbook explicitly forbids production execution. No ACL revoke migration or composite-FK migration has been authored.
