@@ -1,44 +1,43 @@
 # AL GABAS STORE ERP — Deployment and final test checklist
 
 ## Current database state
-The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. The later migrations are committed but have **not** been confirmed as applied.
+The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–12 are committed but have **not** been confirmed as applied.
 
 ## Remaining migrations (do not skip or reorder)
 1. `upgrade-08.sql` — stock counts and returns.
 2. `upgrade-09.sql` — transfers between cash accounts.
 3. `upgrade-10.sql` — prevents negative cash balances and blocks ambiguous returns for products tracked by IMEI.
+4. `upgrade-11.sql` — links sold IMEI units to exact sales invoice lines.
+5. `upgrade-12.sql` — receives purchased IMEI units and links them to exact purchase invoice lines; enables tracked purchase returns.
 
-Run each migration once, in order, in the Supabase SQL Editor. Do not run upgrade-09 or upgrade-10 before upgrade-08. Do not run the same migration repeatedly as a substitute for checking its result.
+Run each migration once, in order, in the Supabase SQL Editor, only after the complete migration set has been reviewed and the owner explicitly approves. Do not run a later migration before an earlier one, and do not repeat a migration to troubleshoot it.
 
 ## Important behavior
-- Products with registered IMEI units cannot be returned through the generic return screen until the original serial is explicitly selected. This is intentional protection; otherwise stock quantity and serial availability could disagree.
+- For a product that is already tracked by IMEI, every new purchase line must include one row of serial data per purchased device. For a newly tracked product, enable “تتبع IMEI” on the purchase line and enter one device per line; the second IMEI is optional. IMEIs must be 15 digits and pass the Luhn check.
+- The database rejects duplicate IMEIs and rolls back the whole purchase if serial registration fails.
+- Purchase returns of tracked products are limited to the serials linked to the original purchase line. The current return workflow automatically selects available linked serials in oldest-first order; it does not yet let the operator choose a particular serial manually.
+- New sales automatically associate sold IMEI unit rows with their exact invoice line. Tracked sale returns use available serials linked to that original sales line, oldest-first. Old sales invoices created before upgrade 11 have no exact serial association; tracked-device returns against those old invoices remain blocked.
 - Cash outflows are rejected if they would make the selected account negative. This covers manual movements and cash movements posted by sales/purchases, expenses, Fawry top-ups, returns, and transfers.
-- Transfers are movements between accounts, not sales or expenses.
+- Transfers between cash accounts are movements, not sales or expenses.
 - The backup export includes the cash transfer ledger.
 
 ## Final verification checklist
-After all migrations are applied, test with a disposable product and small values:
+After all migrations are applied, test with disposable products and small values:
 - Create a non-IMEI product, purchase it, and confirm quantity and cash decrease.
-- Sell part of the quantity, confirm stock and cash increase.
-- Create a sale return against the exact invoice line; confirm returnable quantity decreases on reload and stock increases.
-- Create a purchase return; confirm stock decreases and supplier balance is reduced.
+- Purchase a tracked device with one IMEI; verify the product unit and purchase-line mapping are created.
+- Purchase a dual-SIM tracked device with two distinct IMEIs; verify both serials are stored.
+- Attempt duplicate or invalid IMEI data; the entire purchase must fail without changing stock, invoice, or cash.
+- Sell part of the quantity, confirm stock and cash increase, and verify sale-line IMEI mapping.
+- Create sale and purchase returns against exact invoice lines; confirm returnable quantities decrease and serial states become returned.
+- Attempt a return beyond the remaining invoice-line quantity; it must fail.
 - Attempt an outflow greater than the account balance; it must be rejected without creating a movement.
-- Transfer between two cash accounts; verify both ledger legs are recorded (source and destination), and total cash across the three accounts remains unchanged. Repeat a second transfer with the same amount/date to verify the unique movement key does not collide.
+- Transfer between two cash accounts; verify both ledger legs and unchanged combined cash. Repeat with the same amount/date to verify movement keys do not collide.
 - Attempt a same-account transfer; it must be rejected.
 - Run stocktake and inspect its item history.
-- Export JSON backup and a CSV table; verify the downloaded files open.
-- Print a sales and purchase invoice from Android.
+- Export JSON backup and a CSV table; verify downloaded files open.
+- Print sales and purchase invoices from Android.
 - Verify Fawry, maintenance, expenses, settings, supplier history, and reports.
-- Install/update the Android APK and confirm the app loads the newest script and logo.
+- Install/update the Android APK and confirm the app loads the newest script and original logo.
 
-## Limits still to address before selling to multiple shops
-This version remains a single-owner ERP. It is not yet a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
-
-
-## Upgrade 11 — exact IMEI sale returns
-- Run only after 08, 09 and 10.
-- New sales automatically associate the sold IMEI unit rows with their exact invoice line.
-- A return of a tracked device is allowed only when the original sale line has enough linked units still marked sold; the exact units become returned.
-- Old invoices created before upgrade 11 have no exact serial association and their tracked-device returns remain blocked intentionally.
-- Purchase invoices currently do not create per-unit IMEI records. Do not use purchase returns for tracked IMEI products until purchase-side serial receiving/association is implemented.
-- Test with a new IMEI product: create a sale, verify erp_sales_invoice_item_units, return one unit from that invoice, and verify that exact erp_product_units.status becomes returned. Then verify the same serial is not returned twice.
+## Limits before selling to multiple shops
+This version remains a single-owner ERP, not a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
