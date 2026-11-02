@@ -15,7 +15,7 @@ CREATE OR REPLACE FUNCTION public.erp_guard_sale_unit_link()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_line_owner uuid;
@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION public.erp_link_sold_units_to_sale_line()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_tracked integer;
@@ -131,7 +131,7 @@ CREATE OR REPLACE FUNCTION public.erp_create_sale(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
