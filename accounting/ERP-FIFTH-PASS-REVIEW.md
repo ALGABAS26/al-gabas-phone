@@ -242,3 +242,27 @@ Added `accounting/ERP-STAGING-SECURITY-VALIDATION-RUNBOOK.md` to collect the rem
 A fresh static scan of `accounting/app.js` on this branch found the expected 17 RPC names, including the purchase/sale/return, stock-count, cash, Fawry, maintenance, settings, expense, party, and shop-profile calls. The scan found no direct `.from(...).insert/upsert/update/delete` patterns. This is a regex/source scan only, not proof of complete absence of all direct write paths or runtime behavior.
 
 **Execution blocker:** a Supabase connection is not currently active in this session. The Supabase integration has been surfaced for the user to connect. Until it is connected to the intended separate staging project, no live schema evidence, migration execution, PostgreSQL parse/runtime test, or concurrency test can truthfully be reported. The runbook explicitly forbids production execution. No ACL revoke migration or composite-FK migration has been authored.
+
+
+## Consolidated staging execution package
+
+Added `accounting/ERP-STAGING-ONE-PASS-RUNBOOK.md` as the single ordered staging procedure. It covers isolation and backup prerequisites, sequential application of upgrades 15–27, the matching regression scripts, two-session concurrency tests, read-only FK/relationship/ACL audits, the ACL dependency decision gate, the owner-aware FK decision gate, and the evidence packet required before any release decision.
+
+The runbook is explicitly staging-only. It does not authorize production SQL, merge, deployment, broad ACL revokes, or Multi-Shop onboarding.
+
+## RPC search_path hardening — upgrades 15–26
+
+Static review found the RPC definitions in upgrades 15–26 set `search_path = pg_catalog, public` without explicitly listing `pg_temp`. PostgreSQL can search the temporary schema ahead of the configured path when it is omitted. The draft definitions now explicitly use `search_path = pg_catalog, public, pg_temp` so temporary objects are placed last. Upgrade 27 already used this explicit ordering.
+
+This is a source-level hardening change only. Verify each function's schema-qualified object references and behavior in staging; no SQL was executed here.
+
+## Upgrade 26 regression expansion
+
+The rollback-based regression now additionally checks:
+- non-finite expense and transfer amounts are rejected;
+- scalar (non-object) purchase item elements are rejected;
+- invalid product UUID input is rejected;
+- NaN purchase discount is rejected;
+- rejected purchase attempts do not change invoice count, inventory quantity, or cash-movement count.
+
+Positive-path purchase accounting and concurrent-operation checks remain staging requirements.
