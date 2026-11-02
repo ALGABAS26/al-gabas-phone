@@ -116,10 +116,11 @@ begin
    update public.erp_products set quantity=quantity+v_qty,updated_at=now() where id=v_orig.product_id and owner_id=v_owner;
    -- Do not reactivate arbitrary IMEI units: the original sold serials are not linked to invoice lines.
   else
-   select id,product_id,product_name,quantity,unit_cost as unit_price into v_orig from public.erp_purchase_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
+   select id,product_id,product_name,quantity,unit_cost as unit_price,unit_cost into v_orig from public.erp_purchase_invoice_items where id=(v_item->>'invoice_item_id')::uuid and invoice_id=p_invoice_id and owner_id=v_owner;
    update public.erp_products set quantity=quantity-v_qty,updated_at=now() where id=v_orig.product_id and owner_id=v_owner and quantity>=v_qty;
    if not found then raise exception 'المخزون الحالي لا يكفي لمرتجع الشراء'; end if;
   end if;
+  v_cost:=coalesce(v_orig.unit_cost,0);
   insert into public.erp_return_items(owner_id,return_id,product_id,product_name,quantity,unit_price,unit_cost,line_total)
   values(v_owner,v_return,v_orig.product_id,v_orig.product_name,v_qty,v_orig.unit_price,v_cost,v_qty*v_orig.unit_price);
  end loop;
