@@ -41,8 +41,8 @@ begin
  values(v_owner,coalesce(p_transfer_date,current_date),p_from_account,p_to_account,p_amount,nullif(trim(p_notes),'')) returning id into v_id;
  insert into public.erp_cash_movements(owner_id,movement_date,direction,amount,description,source_type,source_id,account_code)
  values
- (v_owner,coalesce(p_transfer_date,current_date),'out',p_amount,'تحويل إلى '||case p_to_account when 'drawer' then 'درج الكاش' when 'vodafone_cash' then 'فودافون كاش' else 'إنستا باي' end,'cash_transfer',v_id,p_from_account),
- (v_owner,coalesce(p_transfer_date,current_date),'in',p_amount,'تحويل من '||case p_from_account when 'drawer' then 'درج الكاش' when 'vodafone_cash' then 'فودافون كاش' else 'إنستا باي' end,'cash_transfer',v_id,p_to_account);
+ (v_owner,coalesce(p_transfer_date,current_date),'out',p_amount,'تحويل إلى '||case p_to_account when 'drawer' then 'درج الكاش' when 'vodafone_cash' then 'فودافون كاش' else 'إنستا باي' end,'cash_transfer_out',v_id,p_from_account),
+ (v_owner,coalesce(p_transfer_date,current_date),'in',p_amount,'تحويل من '||case p_from_account when 'drawer' then 'درج الكاش' when 'vodafone_cash' then 'فودافون كاش' else 'إنستا باي' end,'cash_transfer_in',v_id,p_to_account);
  return v_id;
 end $$;
 grant execute on function public.erp_transfer_cash(date,text,text,numeric,text) to authenticated;
