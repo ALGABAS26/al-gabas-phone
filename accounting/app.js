@@ -193,14 +193,14 @@ $("#purchase-form").onsubmit=async e=>{
  e.preventDefault();const rows=[...document.querySelectorAll("#purchase-lines tr")];
  const items=rows.map(tr=>{
   const quantity=Number(tr.querySelector(".purchase-qty").value),track=tr.querySelector(".purchase-track-imei").checked,raw=tr.querySelector(".purchase-imeis").value;
-  const imei_units=track?raw.split(/\\r?\\n/).map(line=>{const nums=(line.match(/[0-9٠-٩]{15}/g)||[]).map(digits);return nums.length?{imei1:nums[0],imei2:nums[1]||null}:null;}).filter(Boolean):[];
+  const imei_units=track?raw.split(/\r?\n/).map(line=>{const nums=(line.match(/[0-9٠-٩]{15}/g)||[]).map(digits);return nums.length?{imei1:nums[0],imei2:nums[1]||null}:null;}).filter(Boolean):[];
   return {product_id:tr.querySelector(".purchase-product").value,quantity,unit_cost:Number(tr.querySelector(".purchase-cost").value),imei_units};
  });
  if(items.some(x=>!x.product_id||!Number.isInteger(x.quantity)||x.quantity<1||!Number.isFinite(x.unit_cost)||x.unit_cost<0)){notice("راجع الأصناف والكميات وتكلفة الشراء.",true);return;}
  for(let i=0;i<items.length;i++){
   const item=items[i],tr=rows[i];
   if(tr.querySelector(".purchase-track-imei").checked){
-   const raw=tr.querySelector(".purchase-imeis").value,lines=raw.split(/\\r?\\n/).filter(x=>x.trim());
+   const raw=tr.querySelector(".purchase-imeis").value,lines=raw.split(/\r?\n/).filter(x=>x.trim());
    const serials=item.imei_units.flatMap(x=>[x.imei1,x.imei2].filter(Boolean));
    if(lines.length!==item.quantity||item.imei_units.length!==item.quantity||serials.some(x=>!luhn(x))||new Set(serials).size!==serials.length){notice("أدخل سطرًا لكل جهاز، وكل سطر يحتوي IMEI صحيحًا من 15 رقمًا (والثاني اختياري)، بدون تكرار.",true);return;}
   }else if(purchaseTrackedProductIds.has(item.product_id)){notice("هذا الصنف مسجل بتتبع IMEI؛ فعّل التتبع وأدخل أرقام الأجهزة.",true);return;}
