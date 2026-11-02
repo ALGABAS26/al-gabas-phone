@@ -63,7 +63,7 @@ jobs:
           s = p.read_text()
           if "signingConfigs {" in s:
               raise SystemExit("Signing config already exists; refusing to duplicate it.")
-          match = re.search(r"(?m)^([ \\t]*)buildTypes[ \\t]*\\{", s)
+          match = re.search(r"(?m)^([ \t]*)buildTypes[ \t]*\{", s)
           if not match:
               raise SystemExit("Could not find buildTypes block in android/app/build.gradle")
           indent = match.group(1)
@@ -78,10 +78,10 @@ jobs:
               + indent + "}\n\n"
           )
           s = s[:match.start()] + signing + s[match.start():]
-          build_types = re.search(r"(?m)^[ \\t]*buildTypes[ \\t]*\\{", s)
+          build_types = re.search(r"(?m)^[ \t]*buildTypes[ \t]*\{", s)
           if not build_types:
               raise SystemExit("Could not find buildTypes block")
-          release = re.search(r"(?m)^([ \\t]*)release[ \\t]*\\{", s[build_types.end():])
+          release = re.search(r"(?m)^([ \t]*)release[ \t]*\{", s[build_types.end():])
           if not release:
               raise SystemExit("Could not find release build type")
           release_end = build_types.end() + release.end()
