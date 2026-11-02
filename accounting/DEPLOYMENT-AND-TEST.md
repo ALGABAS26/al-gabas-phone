@@ -1,14 +1,14 @@
 # AL GABAS STORE ERP — Deployment and final test checklist
 
 ## Current database state
-The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–13 are committed but have **not** been confirmed as applied.
+The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–13 were confirmed by the owner as successfully executed. Upgrade 14 is newly added and has **not** yet been executed.
 
 ## Remaining migrations (do not skip or reorder)
 1. `upgrade-08.sql` — stock counts and returns.
 2. `upgrade-09.sql` — transfers between cash accounts.
 3. `upgrade-10.sql` — prevents negative cash balances and blocks ambiguous returns for products tracked by IMEI.
 4. `upgrade-11.sql` — links sold IMEI units to exact sales invoice lines.
-5. `upgrade-12.sql` — receives purchased IMEI units and links them to exact purchase invoice lines; enables tracked purchase returns.\n6. `upgrade-13.sql` — creates the initial shop/membership/subscription/audit foundation and adds nullable `shop_id` columns with a backfill for existing owner rows. It intentionally leaves current owner-based RLS and RPC behavior unchanged.
+5. `upgrade-12.sql` — receives purchased IMEI units and links them to exact purchase invoice lines; enables tracked purchase returns.\n6. `upgrade-13.sql` — creates the initial shop/membership/subscription/audit foundation and adds nullable `shop_id` columns with a backfill for existing owner rows. It intentionally leaves current owner-based RLS and RPC behavior unchanged.\n7. `upgrade-14.sql` — adds a secure read-only RPC for the signed-in user's shop profile and SELECT policies for their own shop metadata. It does not enable multi-shop ERP access.
 
 Run each migration once, in order, in the Supabase SQL Editor, after taking a restorable database backup and reviewing the complete SQL. Do not run a later migration before an earlier one, and do not repeat a migration to troubleshoot it. If any statement errors, stop and share the exact error; do not continue to the next file.
 
@@ -47,4 +47,4 @@ After all migrations are applied, test with disposable products and small values
 
 ## Limits before selling to multiple shops
 This version remains a single-owner ERP, not a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
-\n\n## Upgrade 13 scope and SaaS gate\n\nUpgrade 13 is an additive foundation only. It creates tenant metadata tables and assigns existing ERP rows to an initial shop based on `owner_id`. It does **not** yet enforce shop isolation, does not replace existing RLS policies or business RPC authorization, and does not make the product ready for other shops. Existing ERP screens should continue using the current single-owner account. Do not create or invite customer shops yet. A later upgrade must add shop-aware RLS and shop-aware versions of every write RPC as one coordinated release, then update the frontend to select the active shop.\n
+\n\n## Upgrade 13 scope and SaaS gate\n\nUpgrade 13 is an additive foundation only. It creates tenant metadata tables and assigns existing ERP rows to an initial shop based on `owner_id`. It does **not** yet enforce shop isolation, does not replace existing RLS policies or business RPC authorization, and does not make the product ready for other shops. Existing ERP screens should continue using the current single-owner account. Do not create or invite customer shops yet. A later upgrade must add shop-aware RLS and shop-aware versions of every write RPC as one coordinated release, then update the frontend to select the active shop.\n\n\n## Upgrade 14 and current-shop header\n\nAfter reviewing and backing up the database, run `upgrade-14.sql` once. Then refresh the accounting app. The header should display the shop name and the current user's role. If it displays “تعذر تحميل بيانات المحل”, capture the exact error; do not continue with later SQL. The current ERP business tables still use owner-based access, and this release does not authorize onboarding other shops.\n
