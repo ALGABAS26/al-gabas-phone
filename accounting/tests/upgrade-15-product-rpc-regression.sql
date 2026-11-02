@@ -88,7 +88,24 @@ begin
     raise exception 'FAIL: product row remained after serial-unit insert failed; atomic rollback broken';
   end if;
 
-  raise notice 'PASS: product RPC basic, IMEI, validation, duplicate and atomic rollback checks';
+  -- Case 5: unauthenticated invocation must be rejected.
+  perform set_config('request.jwt.claim.sub', '', true);
+  v_failed := false;
+  begin
+    perform public.erp_create_product_with_optional_imei(
+      'RPC test unauthenticated', 'test', 'new', 100, 150, 1,
+      'TEST-UNAUTH-' || replace(gen_random_uuid()::text,'-',''),
+      null, null
+    );
+  exception when others then
+    v_failed := true;
+  end;
+  if not v_failed then
+    raise exception 'FAIL: unauthenticated RPC call was accepted';
+  end if;
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+
+  raise notice 'PASS: product RPC basic, IMEI, validation, duplicate, atomic rollback and authentication checks';
 end;
 $test$;
 
