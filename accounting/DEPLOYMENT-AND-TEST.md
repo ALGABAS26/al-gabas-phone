@@ -23,7 +23,7 @@ After all migrations are applied, test with a disposable product and small value
 - Create a sale return against the exact invoice line; confirm returnable quantity decreases on reload and stock increases.
 - Create a purchase return; confirm stock decreases and supplier balance is reduced.
 - Attempt an outflow greater than the account balance; it must be rejected without creating a movement.
-- Transfer between two cash accounts; total cash across the three accounts must remain unchanged.
+- Transfer between two cash accounts; verify both ledger legs are recorded (source and destination), and total cash across the three accounts remains unchanged. Repeat a second transfer with the same amount/date to verify the unique movement key does not collide.
 - Attempt a same-account transfer; it must be rejected.
 - Run stocktake and inspect its item history.
 - Export JSON backup and a CSV table; verify the downloaded files open.
