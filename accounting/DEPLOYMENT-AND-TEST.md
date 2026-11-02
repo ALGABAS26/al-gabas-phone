@@ -1,7 +1,7 @@
 # AL GABAS STORE ERP — Deployment and final test checklist
 
 ## Current database state
-The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–13 were confirmed by the owner as successfully executed. Upgrade 14 is newly added and has **not** yet been executed.
+The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–13 were confirmed by the owner as successfully executed. Upgrade 14 was reported by the owner as successfully executed. This is user-reported and has not been independently verified against the database.
 
 ## Remaining migrations (do not skip or reorder)
 1. `upgrade-08.sql` — stock counts and returns.
@@ -48,3 +48,7 @@ After all migrations are applied, test with disposable products and small values
 ## Limits before selling to multiple shops
 This version remains a single-owner ERP, not a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
 \n\n## Upgrade 13 scope and SaaS gate\n\nUpgrade 13 is an additive foundation only. It creates tenant metadata tables and assigns existing ERP rows to an initial shop based on `owner_id`. It does **not** yet enforce shop isolation, does not replace existing RLS policies or business RPC authorization, and does not make the product ready for other shops. Existing ERP screens should continue using the current single-owner account. Do not create or invite customer shops yet. A later upgrade must add shop-aware RLS and shop-aware versions of every write RPC as one coordinated release, then update the frontend to select the active shop.\n\n\n## Upgrade 14 and current-shop header\n\nAfter reviewing and backing up the database, run `upgrade-14.sql` once. Then refresh the accounting app. The header should display the shop name and the current user's role. If it displays “تعذر تحميل بيانات المحل”, capture the exact error; do not continue with later SQL. The current ERP business tables still use owner-based access, and this release does not authorize onboarding other shops.\n
+
+## Read-only tenant readiness audit
+
+`TENANT-READINESS-AUDIT.sql` is a diagnostic snapshot only. It contains SELECT statements and does not alter data, policies, functions, or the public storefront. It reports ERP ownership/tenant columns, RLS state, policies, SECURITY DEFINER functions, approximate row statistics, and shop metadata counts. Use it to prepare the separate test-project migration; it is not a tenant migration and does not make the app SaaS-ready.
