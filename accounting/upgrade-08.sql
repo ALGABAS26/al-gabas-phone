@@ -136,7 +136,7 @@ begin
    v_account:=v_pay->>'account_code';v_amount:=(v_pay->>'amount')::numeric;
    if v_amount>0 then
     insert into public.erp_cash_movements(owner_id,movement_date,direction,amount,description,source_type,source_id,account_code)
-    values(v_owner,coalesce(p_return_date,current_date),'out',v_amount,'رد مبلغ مرتجع بيع رقم '||trim(p_return_no),'sale_return',v_return,v_account);
+    values(v_owner,coalesce(p_return_date,current_date),'out',v_amount,'رد مبلغ مرتجع بيع رقم '||trim(p_return_no),'sale_return',gen_random_uuid(),v_account);
    end if;
   end loop;
  else
