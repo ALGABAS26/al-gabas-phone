@@ -58,9 +58,10 @@ $("#f-date").onchange=async()=>{const date=$("#f-date").value;if(!date)return;co
 $("#fawry-close-form").onsubmit=async e=>{e.preventDefault();const args={p_close_date:$("#f-date").value,p_opening_balance:Number($("#f-opening").value),p_topup_amount:Number($("#f-topup").value),p_closing_balance:Number($("#f-closing").value),p_profit:Number($("#f-profit").value),p_notes:$("#f-close-notes").value.trim()||null,p_funding_account:$("#f-funding").value};const {error}=await db.rpc("erp_save_fawry_daily_close",args);if(error){notice("لم يتم حفظ التقفيل: "+error.message,true);return;}notice("تم حفظ تقفيل فوري، وتم تسجيل الشحن كخروج من الخزينة.");await loadFawryClosing();};
 async function loadCashbox(){
  const {error:initError}=await db.rpc("erp_init_cash_accounts");if(initError){notice("شغّل upgrade-03.sql أولاً: "+initError.message,true);return;}
- const [ar,mr]=await Promise.all([db.from("erp_cash_accounts").select("*"),db.from("erp_cash_movements").select("*").order("movement_date",{ascending:false}).order("created_at",{ascending:false})]);
- if(ar.error||mr.error){notice("تعذر تحميل الخزنة: "+(ar.error||mr.error).message,true);return;}
- const accounts=ar.data||[],moves=mr.data||[],codes=["drawer","vodafone_cash","instapay"];
+ let accountsResult,moves;try{[accountsResult,moves]=await Promise.all([db.from("erp_cash_accounts").select("*"),fetchAll("erp_cash_movements")]);}catch(err){notice("تعذر تحميل الخزنة: "+err.message,true);return;}
+ if(accountsResult.error){notice("تعذر تحميل الخزنة: "+accountsResult.error.message,true);return;}
+ moves.sort((a,b)=>String(b.movement_date).localeCompare(String(a.movement_date))||String(b.created_at).localeCompare(String(a.created_at)));
+ const accounts=accountsResult.data||[],codes=["drawer","vodafone_cash","instapay"];
  for(const code of codes){const ac=accounts.find(x=>x.account_code===code);const balance=Number(ac?.opening_balance||0)+moves.filter(x=>x.account_code===code).reduce((s,x)=>s+(x.direction==="in"?1:-1)*Number(x.amount),0);$("#cash-"+code).textContent=money(balance);$("#opening-"+code).value=ac?.opening_balance||0;}
  const labels={drawer:"درج الكاش",vodafone_cash:"فودافون كاش",instapay:"إنستا باي"};
  $("#cash-movements-body").innerHTML=moves.slice(0,100).map(x=>"<tr><td>"+esc(x.movement_date)+"</td><td>"+labels[x.account_code]+"</td><td>"+(x.direction==="in"?"وارد":"منصرف")+"</td><td>"+money(x.amount)+"</td><td>"+esc(x.description)+"</td></tr>").join("")||"<tr><td colspan='5'>لا توجد حركات مسجلة.</td></tr>";
