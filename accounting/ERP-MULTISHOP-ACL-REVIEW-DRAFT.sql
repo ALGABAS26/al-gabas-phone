@@ -18,7 +18,7 @@ SELECT
 FROM information_schema.role_table_grants
 WHERE table_schema = 'public'
   AND (
-      table_name LIKE 'erp\_%' ESCAPE '\\'
+      left(table_name, 4) = 'erp_'
   )
 ORDER BY table_name, grantee, privilege_type;
 
@@ -40,7 +40,7 @@ SELECT
     privilege_type
 FROM information_schema.role_usage_grants
 WHERE object_schema = 'public'
-  AND object_name LIKE 'erp\_%' ESCAPE '\\'
+  AND left(object_name, 4) = 'erp_'
 ORDER BY object_name, grantee, privilege_type;
 
 -- 2) Effective ACL arrays for ERP relations, including objects whose grants
@@ -54,7 +54,7 @@ SELECT
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
-  AND c.relname LIKE 'erp\_%' ESCAPE '\\'
+  AND left(c.relname, 4) = 'erp_'
   AND c.relkind IN ('r','p','v','m','S','f')
 ORDER BY c.relname;
 
@@ -83,7 +83,7 @@ SELECT
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
-  AND p.proname LIKE 'erp\_%' ESCAPE '\\'
+  AND left(p.proname, 4) = 'erp_'
 ORDER BY p.proname, exact_signature::text;
 
 -- 5) Expanded EXECUTE grants for ERP functions.
@@ -100,7 +100,7 @@ JOIN pg_namespace n ON n.oid = p.pronamespace
 CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) x
 LEFT JOIN pg_roles r ON r.oid = x.grantee
 WHERE n.nspname = 'public'
-  AND p.proname LIKE 'erp\_%' ESCAPE '\\'
+  AND left(p.proname, 4) = 'erp_'
 ORDER BY p.proname, exact_signature::text, grantee;
 
 -- 6) RLS state and policies for ERP tables.
@@ -112,7 +112,7 @@ SELECT
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
-  AND c.relname LIKE 'erp\_%' ESCAPE '\\'
+  AND left(c.relname, 4) = 'erp_'
   AND c.relkind IN ('r','p')
 ORDER BY c.relname;
 
@@ -127,7 +127,7 @@ SELECT
     with_check
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename LIKE 'erp\_%' ESCAPE '\\'
+  AND left(tablename, 4) = 'erp_'
 ORDER BY tablename, policyname;
 
 -- 7) Membership and tenant metadata readiness (read-only).
