@@ -55,10 +55,12 @@ begin
   if p_condition is null or p_condition not in ('new','used','accessory') then
     raise exception 'حالة المنتج غير صحيحة';
   end if;
-  if p_cost_price is null or p_cost_price < 0 then
+  if p_cost_price is null or p_cost_price < 0
+     or p_cost_price::text in ('NaN','Infinity','-Infinity') then
     raise exception 'سعر التكلفة غير صحيح';
   end if;
-  if p_sale_price is null or p_sale_price < 0 then
+  if p_sale_price is null or p_sale_price < 0
+     or p_sale_price::text in ('NaN','Infinity','-Infinity') then
     raise exception 'سعر البيع غير صحيح';
   end if;
   if p_quantity is null or p_quantity < 0 then
