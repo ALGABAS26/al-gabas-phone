@@ -194,3 +194,15 @@ This branch work is not production authorization. No live SQL is run by this spe
 - Does not alter sale/purchase/return posting or their atomic ledger effects.
 - Adds a rollback-based staging test for increase/decrease entries, missing/foreign party IDs, invalid inputs, and unauthenticated invocation.
 - Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
+
+## 16. Seventh implementation slice — maintenance order creation
+
+- New migration: `upgrade-21.sql`.
+- RPC: `erp_create_maintenance_order(...)`.
+- The repair intake form now calls the RPC instead of directly inserting into `erp_maintenance_orders`.
+- Uses `SECURITY INVOKER`, fixed `search_path = pg_catalog, public`, and derives `owner_id` only from `auth.uid()`.
+- Generates the repair ticket number on the database side; the client no longer supplies a ticket number.
+- Validates customer name, device name, problem description, and a non-NULL, nonnegative, finite estimated cost. Blank optional values normalize to NULL.
+- New orders always begin in the existing `received` status. Existing status-update/read behavior is unchanged.
+- Adds a rollback-based staging test for ticket generation, valid order data, optional defaults, invalid required fields/cost, and unauthenticated invocation.
+- Prepared only: no SQL execution or runtime test has occurred. Apply the migration in a separate staging project before deploying the matching app version.
