@@ -59,7 +59,7 @@ begin
 end $$;
 drop trigger if exists erp_cash_movement_balance_guard on public.erp_cash_movements;
 create trigger erp_cash_movement_balance_guard
-before insert or update on public.erp_cash_movements
+before insert or update or delete on public.erp_cash_movements
 for each row execute function public.erp_guard_cash_movement_balance();
 
 -- Opening balance edits must not make a cash account negative after its movement history.
