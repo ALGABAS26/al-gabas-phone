@@ -57,6 +57,10 @@ begin
   if not found then raise exception 'منتج غير موجود'; end if;
   v_counted:=(v_item->>'counted_quantity')::integer;
   if v_counted<0 then raise exception 'الكمية الفعلية لا يمكن أن تكون سالبة'; end if;
+  if exists(select 1 from public.erp_product_units where owner_id=v_owner and product_id=v_product.id)
+     and v_counted<>(select count(*) from public.erp_product_units where owner_id=v_owner and product_id=v_product.id and status='in_stock') then
+    raise exception 'هذا المنتج له أرقام IMEI؛ يجب أن تطابق كمية الجرد عدد الأجهزة المسجلة بحالة متاح';
+  end if;
   v_diff:=v_counted-v_product.quantity;
   insert into public.erp_stock_count_items(owner_id,count_id,product_id,product_name,system_quantity,counted_quantity,difference)
   values(v_owner,v_count,v_product.id,v_product.name,v_product.quantity,v_counted,v_diff);
@@ -77,6 +81,7 @@ begin
  if p_return_type not in ('sale','purchase') then raise exception 'نوع المرتجع غير صحيح'; end if;
  if coalesce(trim(p_return_no),'')='' then raise exception 'رقم المرتجع مطلوب'; end if;
  if jsonb_typeof(p_items)<>'array' or jsonb_array_length(p_items)=0 then raise exception 'أضف صنفًا واحدًا على الأقل'; end if;
+ if exists(select 1 from jsonb_array_elements(p_items) with ordinality a(value,n), jsonb_array_elements(p_items) with ordinality b(value,n) where a.n<b.n and a.value->>'invoice_item_id'=b.value->>'invoice_item_id') then raise exception 'لا تكرر نفس سطر الفاتورة في المرتجع'; end if;
  if p_return_type='sale' then
   select customer_name into v_party_name from public.erp_sales_invoices where id=p_invoice_id and owner_id=v_owner and status='completed' for update;
   if not found then raise exception 'فاتورة البيع غير موجودة أو ملغاة'; end if;
