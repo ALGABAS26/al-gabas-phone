@@ -13,31 +13,33 @@ create index if not exists erp_purchase_item_units_line_idx on public.erp_purcha
 -- Enforce ownership and product/line consistency even if a client writes to the
 -- mapping table directly instead of using the purchase RPC.
 create or replace function public.erp_guard_purchase_unit_link()
-returns trigger language plpgsql security invoker set search_path=public as $
+returns trigger language plpgsql security invoker set search_path=public as $func$
 declare v_line_owner uuid; v_line_product uuid; v_unit_owner uuid; v_unit_product uuid;
 begin
- select owner_id,product_id into v_line_owner,v_line_product
- from public.erp_purchase_invoice_items where id=new.invoice_item_id;
- select owner_id,product_id into v_unit_owner,v_unit_product
- from public.erp_product_units where id=new.product_unit_id;
- if v_line_owner is null or v_unit_owner is null
-    or v_line_owner<>new.owner_id or v_unit_owner<>new.owner_id
-    or v_line_product<>v_unit_product then
+ select owner_id,product_id into v_line_owner,v_line_product from public.erp_purchase_invoice_items where id=new.invoice_item_id;
+ select owner_id,product_id into v_unit_owner,v_unit_product from public.erp_product_units where id=new.product_unit_id;
+ if v_line_owner is null or v_unit_owner is null or v_line_owner<>new.owner_id or v_unit_owner<>new.owner_id or v_line_product<>v_unit_product then
   raise exception 'ربط رقم IMEI يجب أن يكون مع صنف وفاتورة من نفس الحساب';
  end if;
  return new;
-end $;
+end;
+$func$;
 drop trigger if exists erp_purchase_unit_link_guard on public.erp_purchase_invoice_item_units;
-create trigger erp_purchase_unit_link_guard
-before insert or update on public.erp_purchase_invoice_item_units
-for each row execute function public.erp_guard_purchase_unit_link();
+create trigger erp_purchase_unit_link_guard before insert or update on public.erp_purchase_invoice_item_units for each row execute function public.erp_guard_purchase_unit_link();
 
--- Validate the IMEI check digit in the database too, not only in the browser.
 create or replace function public.erp_imei_luhn_valid(p_imei text)
-returns boolean language plpgsql immutable strict as $
+returns boolean language plpgsql immutable strict as $func$
 declare v_sum integer:=0; v_digit integer; v_double boolean:=false; i integer;
 begin
- if p_imei !~ '^[0-9]{15}
+ if p_imei !~ '^[0-9]{15}$' then return false; end if;
+ for i in reverse 15..1 loop
+  v_digit:=substring(p_imei from i for 1)::integer;
+  if v_double then v_digit:=v_digit*2; if v_digit>9 then v_digit:=v_digit-9; end if; end if;
+  v_sum:=v_sum+v_digit; v_double:=not v_double;
+ end loop;
+ return v_sum%10=0;
+end;
+$func$;
 alter table public.erp_purchase_invoice_item_units enable row level security;
 drop policy if exists erp_purchase_item_units_owner_all on public.erp_purchase_invoice_item_units;
 create policy erp_purchase_item_units_owner_all on public.erp_purchase_invoice_item_units
