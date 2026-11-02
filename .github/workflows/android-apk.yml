@@ -43,11 +43,11 @@ jobs:
 
       - name: Configure Android release signing
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          KEYSTORE_FILE: ${{ runner.temp }}/al-gabas-upload-key.jks
+          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_FILE: \${{ runner.temp }}/al-gabas-upload-key.jks
         run: |
           set -euo pipefail
           test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing ANDROID_KEYSTORE_BASE64 secret" && exit 1)
@@ -63,30 +63,30 @@ jobs:
           s = p.read_text()
           if "signingConfigs {" in s:
               raise SystemExit("Signing config already exists; refusing to duplicate it.")
-          match = re.search(r"(?m)^(\\s*)buildTypes\\s*\\{", s)
+          match = re.search(r"(?m)^(\s*)buildTypes\s*\{", s)
           if not match:
               raise SystemExit("Could not find buildTypes block in android/app/build.gradle")
           indent = match.group(1)
           signing = (
-              indent + "signingConfigs {\\n"
-              + indent + "    release {\\n"
-              + indent + "        storeFile file(System.getenv('KEYSTORE_FILE'))\\n"
-              + indent + "        storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')\\n"
-              + indent + "        keyAlias System.getenv('ANDROID_KEY_ALIAS')\\n"
-              + indent + "        keyPassword System.getenv('ANDROID_KEY_PASSWORD')\\n"
-              + indent + "    }\\n"
-              + indent + "}\\n\\n"
+              indent + "signingConfigs {\n"
+              + indent + "    release {\n"
+              + indent + "        storeFile file(System.getenv('KEYSTORE_FILE'))\n"
+              + indent + "        storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')\n"
+              + indent + "        keyAlias System.getenv('ANDROID_KEY_ALIAS')\n"
+              + indent + "        keyPassword System.getenv('ANDROID_KEY_PASSWORD')\n"
+              + indent + "    }\n"
+              + indent + "}\n\n"
           )
           s = s[:match.start()] + signing + s[match.start():]
-          build_types = re.search(r"(?m)^\\s*buildTypes\\s*\\{", s)
+          build_types = re.search(r"(?m)^\s*buildTypes\s*\{", s)
           if not build_types:
               raise SystemExit("Could not find buildTypes block")
-          release = re.search(r"(?m)^(\\s*)release\\s*\\{", s[build_types.end():])
+          release = re.search(r"(?m)^(\s*)release\s*\{", s[build_types.end():])
           if not release:
               raise SystemExit("Could not find release build type")
           release_end = build_types.end() + release.end()
           release_indent = release.group(1) + "    "
-          s = s[:release_end] + "\\n" + release_indent + "signingConfig signingConfigs.release" + s[release_end:]
+          s = s[:release_end] + "\n" + release_indent + "signingConfig signingConfigs.release" + s[release_end:]
           p.write_text(s)
           PYCODE
 
