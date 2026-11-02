@@ -25,6 +25,8 @@ DECLARE
   v_returned integer;
   v_sale_original_qty integer;
   v_purchase_original_qty integer;
+  v_purchase_before_qty integer;
+  v_purchase_after_qty integer;
 BEGIN
   IF v_owner IS NULL THEN
     RAISE EXCEPTION 'Test setup failed: synthetic auth user is not active';
@@ -104,6 +106,10 @@ BEGIN
 
   SELECT i.quantity INTO v_purchase_original_qty
   FROM public.erp_purchase_invoice_items i WHERE i.id=v_purchase_item AND i.owner_id=v_owner;
+  SELECT p.quantity INTO v_purchase_before_qty
+  FROM public.erp_products p
+  JOIN public.erp_purchase_invoice_items i ON i.product_id=p.id AND i.owner_id=p.owner_id
+  WHERE i.id=v_purchase_item AND i.owner_id=v_owner;
 
   v_return_id := public.erp_post_return(
     'RPC24-PURCHASE-1-'||replace(gen_random_uuid()::text,'-',''),
@@ -134,6 +140,13 @@ BEGIN
     AND r.return_type='purchase' AND ri.invoice_item_id=v_purchase_item;
   IF v_returned <> 1 THEN
     RAISE EXCEPTION 'FAIL: purchase returned quantity changed after rejected over-return';
+  END IF;
+  SELECT p.quantity INTO v_purchase_after_qty
+  FROM public.erp_products p
+  JOIN public.erp_purchase_invoice_items i ON i.product_id=p.id AND i.owner_id=p.owner_id
+  WHERE i.id=v_purchase_item AND i.owner_id=v_owner;
+  IF v_purchase_after_qty <> v_purchase_before_qty - 1 THEN
+    RAISE EXCEPTION 'FAIL: rejected purchase return changed inventory or accepted return did not reduce stock';
   END IF;
 
   -- SQL NULL and malformed JSON must be rejected before any persistent write.
