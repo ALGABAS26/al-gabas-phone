@@ -69,6 +69,12 @@ declare v_net numeric(14,2);
 begin
  if new.opening_balance<0 then raise exception 'الرصيد الافتتاحي لا يمكن أن يكون سالبًا'; end if;
  perform 1 from public.erp_cash_accounts where id=old.id for update;
+ if new.opening_balance is distinct from old.opening_balance and exists(
+  select 1 from public.erp_cash_movements
+  where owner_id=old.owner_id and account_code=old.account_code
+ ) then
+  raise exception 'لا يمكن تعديل الرصيد الافتتاحي بعد تسجيل حركات على الحساب. سجّل تسوية كحركة خزنة بدلًا من ذلك';
+ end if;
  select coalesce(sum(case when direction='in' then amount else -amount end),0)
  into v_net from public.erp_cash_movements
  where owner_id=old.owner_id and account_code=old.account_code;
