@@ -1,54 +1,46 @@
 # AL GABAS STORE ERP — Deployment and final test checklist
 
 ## Current database state
-The owner previously confirmed that `schema.sql` and `upgrade-02.sql` through `upgrade-07.sql` were applied successfully. Upgrades 08–13 were confirmed by the owner as successfully executed. Upgrade 14 was reported by the owner as successfully executed. This is user-reported and has not been independently verified against the database.
+The owner reports that `schema.sql` and `upgrade-02.sql` through `upgrade-14.sql` were applied successfully. This is user-reported and has not been independently verified against the live database. Do not rerun these migrations to troubleshoot.
 
-## Remaining migrations (do not skip or reorder)
-1. `upgrade-08.sql` — stock counts and returns.
-2. `upgrade-09.sql` — transfers between cash accounts.
-3. `upgrade-10.sql` — prevents negative cash balances and blocks ambiguous returns for products tracked by IMEI.
-4. `upgrade-11.sql` — links sold IMEI units to exact sales invoice lines.
-5. `upgrade-12.sql` — receives purchased IMEI units and links them to exact purchase invoice lines; enables tracked purchase returns.\n6. `upgrade-13.sql` — creates the initial shop/membership/subscription/audit foundation and adds nullable `shop_id` columns with a backfill for existing owner rows. It intentionally leaves current owner-based RLS and RPC behavior unchanged.\n7. `upgrade-14.sql` — adds a secure read-only RPC for the signed-in user's shop profile and SELECT policies for their own shop metadata. It does not enable multi-shop ERP access.
-
-Run each migration once, in order, in the Supabase SQL Editor, after taking a restorable database backup and reviewing the complete SQL. Do not run a later migration before an earlier one, and do not repeat a migration to troubleshoot it. If any statement errors, stop and share the exact error; do not continue to the next file.
+## Immediate next database step
+Run `TENANT-READINESS-AUDIT.sql` in Supabase SQL Editor and save the result sets for review. It contains SELECT statements only, does not change the database, and does not inspect `public.products`. Use the output to plan and verify tenant isolation in a separate Supabase test project. Do not make live production RLS/RPC changes as part of this audit.
 
 ## Important behavior
-- For a product that is already tracked by IMEI, every new purchase line must include one row of serial data per purchased device. For a newly tracked product, enable “تتبع IMEI” on the purchase line and enter one device per line; the second IMEI is optional. IMEIs must be 15 digits and pass the Luhn check.
+- For a product that is already tracked by IMEI, every new purchase line must include serial data for each purchased device. For a newly tracked product, enable “تتبع IMEI” on the purchase line and enter one device per line; the second IMEI is optional. IMEIs must be 15 digits and pass the Luhn check.
 - The database rejects duplicate IMEIs and rolls back the whole purchase if serial registration fails.
-- Purchase returns of tracked products are limited to the serials linked to the original purchase line. The current return workflow automatically selects available linked serials in oldest-first order; it does not yet let the operator choose a particular serial manually.
-- New sales automatically associate sold IMEI unit rows with their exact invoice line. Tracked sale returns use available serials linked to that original sales line, oldest-first. Old sales invoices created before upgrade 11 have no exact serial association; tracked-device returns against those old invoices remain blocked.
+- Purchase returns of tracked products are limited to serials linked to the original purchase line. The current return workflow automatically selects available linked serials in oldest-first order; the operator cannot manually choose a serial in the return screen yet.
+- New sales associate sold IMEI unit rows with their exact invoice line. Tracked sale returns use available serials linked to that original sales line, oldest-first. Old sales invoices created before upgrade 11 have no exact serial association; tracked-device returns against those old invoices remain blocked.
 - Cash outflows are rejected if they would make the selected account negative. This covers manual movements and cash movements posted by sales/purchases, expenses, Fawry top-ups, returns, and transfers.
 - Transfers between cash accounts are movements, not sales or expenses.
 - The backup export includes the cash transfer ledger.
 
-## IMEI receiving and return behavior
-- Upgrade 12 records one or two validated 15-digit IMEI values for each tracked purchased device and links each unit to its exact purchase invoice line.
-- IMEI check digits are validated in the database with Luhn; duplicate values are prevented by the product-unit uniqueness constraints.
-- For tracked products, returns are currently FIFO: the database marks the oldest still-available unit linked to the exact original invoice line as returned. The operator does not select a specific serial in the return screen yet; this limitation is disclosed in the UI.
-- The owner reports that `upgrade-12.sql` was executed successfully as part of upgrades 08–14. This report has not been independently verified. Its behavior still needs to be tested in a separate Supabase test project before any SaaS production cutover.
-
 ## Functional verification checklist
-The owner has reported the migrations above as applied. Use disposable products and small values for any additional functional verification:
-- Create a non-IMEI product, purchase it, and confirm quantity and cash decrease.
-- Purchase a tracked device with one IMEI; verify the product unit and purchase-line mapping are created.
+Use disposable products and small values for additional functional verification:
+- Create a non-IMEI product, purchase it, and confirm quantity and cash movement.
+- Purchase a tracked device with one IMEI; verify the product unit and purchase-line mapping.
 - Purchase a dual-SIM tracked device with two distinct IMEIs; verify both serials are stored.
-- Attempt duplicate or invalid IMEI data; the entire purchase must fail without changing stock, invoice, or cash.
-- Sell part of the quantity, confirm stock and cash increase, and verify sale-line IMEI mapping.
+- Attempt duplicate or invalid IMEI data; the whole purchase must fail without changing stock, invoice, or cash.
+- Sell part of the quantity; confirm stock and cash update and verify sale-line IMEI mapping.
 - Create sale and purchase returns against exact invoice lines; confirm returnable quantities decrease and serial states become returned.
 - Attempt a return beyond the remaining invoice-line quantity; it must fail.
 - Attempt an outflow greater than the account balance; it must be rejected without creating a movement.
-- Transfer between two cash accounts; verify both ledger legs and unchanged combined cash. Repeat with the same amount/date to verify movement keys do not collide.
-- Attempt a same-account transfer; it must be rejected.
+- Transfer between two cash accounts; verify both ledger legs and unchanged combined cash. Attempt a same-account transfer; it must be rejected.
 - Run stocktake and inspect its item history.
 - Export JSON backup and a CSV table; verify downloaded files open.
 - Print sales and purchase invoices from Android.
 - Verify Fawry, maintenance, expenses, settings, supplier history, and reports.
 - Install/update the Android APK and confirm the app loads the newest script and original logo.
 
-## Limits before selling to multiple shops
-This version remains a single-owner ERP, not a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
-\n\n## Upgrade 13 scope and SaaS gate\n\nUpgrade 13 is an additive foundation only. It creates tenant metadata tables and assigns existing ERP rows to an initial shop based on `owner_id`. It does **not** yet enforce shop isolation, does not replace existing RLS policies or business RPC authorization, and does not make the product ready for other shops. Existing ERP screens should continue using the current single-owner account. Do not create or invite customer shops yet. A later upgrade must add shop-aware RLS and shop-aware versions of every write RPC as one coordinated release, then update the frontend to select the active shop.\n\n\n## Upgrade 14 and current-shop header\n\nAfter reviewing and backing up the database, run `upgrade-14.sql` once. Then refresh the accounting app. The header should display the shop name and the current user's role. If it displays “تعذر تحميل بيانات المحل”, capture the exact error; do not continue with later SQL. The current ERP business tables still use owner-based access, and this release does not authorize onboarding other shops.\n
+## SaaS release blockers
+This version remains a single-owner ERP, not a multi-tenant SaaS product. Do not share the current login with another shop or create/invite customer shops yet.
+
+Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, secure shop onboarding, and tenant-aware exports/backups/storage. Direct REST table access is a separate security boundary; changing RPCs alone is insufficient. Test with two synthetic shops and multiple roles in a separate Supabase test project, including cross-shop reads/writes, forged shop IDs, cross-shop foreign references, returns, cash transfers, membership revocation, subscription restrictions, exports, backups, and storage URLs. Every cross-shop operation must fail at the database boundary.
+
+## Upgrade 13 and 14 scope
+Upgrade 13 is an additive foundation: it creates shop/membership/subscription/audit metadata and adds nullable `shop_id` columns with a backfill for existing owner rows. It does not enforce shop isolation or replace current owner-based RLS/RPC authorization.
+
+Upgrade 14 adds a read-only RPC for the signed-in user's shop profile and SELECT policies for their own shop metadata. It does not enable multi-shop ERP access. If the app header displays “تعذر تحميل بيانات المحل”, capture the exact error; do not attempt to fix it by rerunning migrations.
 
 ## Read-only tenant readiness audit
-
-`TENANT-READINESS-AUDIT.sql` is a diagnostic snapshot only. It contains SELECT statements and does not alter data, policies, functions, or the public storefront. It reports ERP ownership/tenant columns, RLS state, policies, SECURITY DEFINER functions, approximate row statistics, and shop metadata counts. Use it to prepare the separate test-project migration; it is not a tenant migration and does not make the app SaaS-ready.
+`TENANT-READINESS-AUDIT.sql` is a diagnostic snapshot only. It reports ERP ownership/tenant columns, RLS state, policies, SECURITY DEFINER functions, approximate row statistics, and shop metadata counts. It does not alter data, policies, functions, or the public storefront, and it does not inspect `public.products`. Its output is needed before preparing the tenant migration for a separate test project.
