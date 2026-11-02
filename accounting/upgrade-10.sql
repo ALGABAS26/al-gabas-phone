@@ -6,39 +6,57 @@
 create or replace function public.erp_guard_cash_movement_balance()
 returns trigger language plpgsql security invoker set search_path=public as $$
 declare
- v_owner uuid; v_account text; v_balance numeric(14,2); v_opening numeric(14,2);
- v_exclude uuid; v_delta numeric(14,2);
+ v_old_opening numeric(14,2); v_new_opening numeric(14,2);
+ v_old_net numeric(14,2); v_new_net numeric(14,2);
+ v_old_after numeric(14,2); v_new_after numeric(14,2);
+ v_delta numeric(14,2);
 begin
- if tg_op='DELETE' then return old; end if;
- if tg_op='UPDATE' then
-  -- Lock both affected accounts in stable order before recalculating.
-  perform 1 from public.erp_cash_accounts
-   where owner_id in (old.owner_id,new.owner_id)
-     and account_code in (old.account_code,new.account_code)
-   order by owner_id,account_code for update;
-  v_exclude:=old.id;
- else
-  select opening_balance into v_opening from public.erp_cash_accounts
+ if tg_op='INSERT' then
+  select opening_balance into v_new_opening from public.erp_cash_accounts
    where owner_id=new.owner_id and account_code=new.account_code for update;
   if not found then raise exception 'حساب الخزنة غير مهيأ'; end if;
- end if;
- if tg_op='UPDATE' then
-  select opening_balance into v_opening from public.erp_cash_accounts
+  select coalesce(sum(case when direction='in' then amount else -amount end),0)
+   into v_new_net from public.erp_cash_movements
    where owner_id=new.owner_id and account_code=new.account_code;
-  if not found then raise exception 'حساب الخزنة غير مهيأ'; end if;
+  v_new_after:=coalesce(v_new_opening,0)+v_new_net;
+  v_delta:=case when new.direction='in' then new.amount else -new.amount end;
+  if v_new_after+v_delta<0 then
+   raise exception 'الرصيد غير كافٍ في الحساب. الرصيد المتاح: %',v_new_after;
+  end if;
+  return new;
  end if;
+
+ -- Lock both affected account rows in a stable order for UPDATE/DELETE.
+ perform 1 from public.erp_cash_accounts
+  where (owner_id=old.owner_id and account_code=old.account_code)
+     or (tg_op='UPDATE' and owner_id=new.owner_id and account_code=new.account_code)
+  order by owner_id,account_code for update;
+
+ select opening_balance into v_old_opening from public.erp_cash_accounts
+  where owner_id=old.owner_id and account_code=old.account_code;
+ if not found then raise exception 'حساب الخزنة الأصلي غير مهيأ'; end if;
  select coalesce(sum(case when direction='in' then amount else -amount end),0)
- into v_balance from public.erp_cash_movements
- where owner_id=new.owner_id and account_code=new.account_code
-   and (v_exclude is null or id<>v_exclude);
- v_balance:=coalesce(v_opening,0)+v_balance;
+  into v_old_net from public.erp_cash_movements
+  where owner_id=old.owner_id and account_code=old.account_code and id<>old.id;
+ v_old_after:=coalesce(v_old_opening,0)+v_old_net;
+ if v_old_after<0 then
+  raise exception 'لا يمكن تعديل أو حذف الحركة؛ سيصبح رصيد الحساب الأصلي سالبًا';
+ end if;
+ if tg_op='DELETE' then return old; end if;
+
+ select opening_balance into v_new_opening from public.erp_cash_accounts
+  where owner_id=new.owner_id and account_code=new.account_code;
+ if not found then raise exception 'حساب الخزنة الجديد غير مهيأ'; end if;
+ select coalesce(sum(case when direction='in' then amount else -amount end),0)
+  into v_new_net from public.erp_cash_movements
+  where owner_id=new.owner_id and account_code=new.account_code and id<>old.id;
+ v_new_after:=coalesce(v_new_opening,0)+v_new_net;
  v_delta:=case when new.direction='in' then new.amount else -new.amount end;
- if v_balance+v_delta<0 then
-  raise exception 'الرصيد غير كافٍ في الحساب. الرصيد المتاح: %',v_balance;
+ if v_new_after+v_delta<0 then
+  raise exception 'الرصيد غير كافٍ في الحساب. الرصيد المتاح: %',v_new_after;
  end if;
  return new;
 end $$;
-
 drop trigger if exists erp_cash_movement_balance_guard on public.erp_cash_movements;
 create trigger erp_cash_movement_balance_guard
 before insert or update on public.erp_cash_movements
