@@ -131,3 +131,10 @@ This addendum is based on reading the actual SQL definitions in `main` (upgrades
 6. Stage and execute the two-user, IMEI legacy-data, cash concurrency, and full regression matrix before any production rollout.
 
 No SQL has been run and no production data, grants, app code, or storefront resources have been changed.
+
+
+### Additional ACL finding: RPC EXECUTE grants need explicit PUBLIC/anon revocation
+- A pass over the SQL function definitions in upgrades 02-14 found that the application RPCs are generally granted to `authenticated`, but the migrations do not explicitly revoke the default function EXECUTE privilege from `PUBLIC` / `anon`.
+- Upgrade 14 is the exception: `erp_my_shop_profile()` explicitly revokes all from `public,anon` before granting authenticated.
+- Most write RPCs are `SECURITY INVOKER` and check `auth.uid()`, so this is not proof that anonymous writes currently succeed. It is nevertheless an ACL least-privilege gap: relying on an internal null-auth check is weaker than preventing anonymous EXECUTE at the permission layer.
+- Remediation must inventory exact overload signatures, revoke from `PUBLIC` and `anon`, then grant only the intended role(s). Preserve authenticated EXECUTE where the app needs it, and account for invoker-rights calls between RPCs/helpers. Do not apply broad blanket revokes without testing every app and trigger path.
