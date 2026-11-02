@@ -33,3 +33,12 @@ After all migrations are applied, test with a disposable product and small value
 
 ## Limits still to address before selling to multiple shops
 This version remains a single-owner ERP. It is not yet a multi-tenant SaaS product. Before onboarding other shops, implement and test tenant membership, tenant-scoped RLS for every ERP table and RPC, owner/admin roles, subscription status/expiry, and a secure shop onboarding flow. Do not share the current owner login with another shop.
+
+
+## Upgrade 11 — exact IMEI sale returns
+- Run only after 08, 09 and 10.
+- New sales automatically associate the sold IMEI unit rows with their exact invoice line.
+- A return of a tracked device is allowed only when the original sale line has enough linked units still marked sold; the exact units become returned.
+- Old invoices created before upgrade 11 have no exact serial association and their tracked-device returns remain blocked intentionally.
+- Purchase invoices currently do not create per-unit IMEI records. Do not use purchase returns for tracked IMEI products until purchase-side serial receiving/association is implemented.
+- Test with a new IMEI product: create a sale, verify erp_sales_invoice_item_units, return one unit from that invoice, and verify that exact erp_product_units.status becomes returned. Then verify the same serial is not returned twice.
