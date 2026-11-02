@@ -1,18 +1,15 @@
 -- AL GABAS ERP — SELECT-only owner/FK preflight audit
--- Run only in a separate staging project first.
--- This script does not read or modify public.products, storefront objects, or live data.
--- It performs catalog reads and emits per-FK SELECT statements; it does not execute
--- generated SQL. Review the output, then run the generated SELECTs individually.
+-- Run in a separate staging project first.
+-- Catalog-only discovery; does not alter data, schema, grants, or storefront objects.
+-- public.products is excluded because only public.erp_% relations are considered.
+-- The first query finds FKs between ERP tables that both have owner_id but whose
+-- FK column mapping omits owner_id. It emits SELECT statements; it does not execute
+-- the generated statements. Review and run those statements individually.
 --
--- Purpose:
---   1) Find ERP foreign keys where both child and parent have owner_id but the FK
---      does not include owner_id.
---   2) Generate orphan and cross-owner row-count checks for each candidate FK.
---
--- A candidate is not automatically a defect: nullable relationships, legacy design,
--- and application invariants must be reviewed before proposing any constraint change.
--- Do not add composite constraints until all generated checks are clean and duplicates
--- on the proposed parent keys have also been checked.
+-- A candidate is not automatically a defect. Review nullable relationships,
+-- intentional cross-table references, legacy invariants, and actual application use.
+-- Do not add composite constraints until orphan/cross-owner checks and duplicate-key
+-- checks have been reviewed against the deployed staging schema.
 
 WITH fk_columns AS (
   SELECT
@@ -25,8 +22,6 @@ WITH fk_columns AS (
     con.convalidated,
     con.condeferrable,
     con.condeferred,
-    con.conkey,
-    con.confkey,
     bool_or(child_att.attname = 'owner_id') AS child_fk_has_owner,
     bool_or(parent_att.attname = 'owner_id') AS parent_fk_has_owner,
     string_agg(
@@ -57,8 +52,8 @@ WITH fk_columns AS (
   WHERE con.contype = 'f'
     AND child_ns.nspname = 'public'
     AND parent_ns.nspname = 'public'
-    AND child.relname LIKE 'erp\_%' ESCAPE '\\'
-    AND parent.relname LIKE 'erp\_%' ESCAPE '\\'
+    AND left(child.relname, 4) = 'erp_'
+    AND left(parent.relname, 4) = 'erp_'
     AND EXISTS (
       SELECT 1 FROM pg_attribute a
       WHERE a.attrelid = child.oid AND a.attname = 'owner_id'
@@ -72,7 +67,7 @@ WITH fk_columns AS (
   GROUP BY
     con.oid, con.conname, child_ns.nspname, child.relname,
     parent_ns.nspname, parent.relname, con.convalidated,
-    con.condeferrable, con.condeferred, con.conkey, con.confkey
+    con.condeferrable, con.condeferred
 )
 SELECT
   constraint_oid,
@@ -111,24 +106,25 @@ SELECT
 FROM fk_columns
 ORDER BY child_table, conname;
 
--- Additional duplicate-key preflight:
--- For every proposed composite parent key (id, owner_id), verify that it is unique
--- before creating a UNIQUE constraint/index. The normal PK on id usually guarantees
--- this, but inspect actual deployed constraints rather than assuming migration parity.
+-- Existing primary/unique keys on ERP tables. Use this inventory to confirm whether
+-- a proposed parent key is already unique before considering an owner-aware FK.
 SELECT
-  n.nspname AS schema_name,
-  c.relname AS erp_table,
-  bool_or(a.attname = 'id') AS has_id,
-  bool_or(a.attname = 'owner_id') AS has_owner_id,
-  string_agg(format('%I', a.attname), ', ' ORDER BY a.attnum) AS visible_columns
-FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
-JOIN pg_attribute a ON a.attrelid = c.oid
-WHERE n.nspname = 'public'
-  AND c.relkind IN ('r','p')
-  AND c.relname LIKE 'erp\_%' ESCAPE '\\'
-  AND a.attnum > 0
-  AND NOT a.attisdropped
-GROUP BY n.nspname, c.relname
-HAVING bool_or(a.attname = 'id') AND bool_or(a.attname = 'owner_id')
-ORDER BY c.relname;
+  ns.nspname AS schema_name,
+  tbl.relname AS erp_table,
+  con.conname AS key_name,
+  CASE con.contype WHEN 'p' THEN 'PRIMARY KEY' ELSE 'UNIQUE' END AS key_type,
+  pg_get_constraintdef(con.oid, true) AS key_definition,
+  bool_or(att.attname = 'owner_id') AS key_includes_owner_id
+FROM pg_constraint con
+JOIN pg_class tbl ON tbl.oid = con.conrelid
+JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS key_col(attnum, ordinality) ON true
+JOIN pg_attribute att
+  ON att.attrelid = tbl.oid
+ AND att.attnum = key_col.attnum
+ AND NOT att.attisdropped
+WHERE con.contype IN ('p','u')
+  AND ns.nspname = 'public'
+  AND left(tbl.relname, 4) = 'erp_'
+GROUP BY ns.nspname, tbl.relname, con.conname, con.contype, con.oid
+ORDER BY tbl.relname, con.conname;
