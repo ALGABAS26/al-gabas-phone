@@ -127,7 +127,7 @@ $("#party-new").onclick=()=>{$("#party-form-panel").hidden=false;$("#party-name"
 $("#party-cancel").onclick=()=>{$("#party-form-panel").hidden=true;$("#party-form").reset();};
 $("#party-search").oninput=loadParties;
 $("#parties-body").onclick=e=>{const b=e.target.closest(".party-open"),s=e.target.closest(".supplier-purchases-open");if(b)openParty(b.dataset.id);if(s)openSupplierPurchases(s.dataset.id);};
-$("#party-form").onsubmit=async e=>{e.preventDefault();const row={owner_id:session.user.id,party_type:$("#party-type").value,name:$("#party-name").value.trim(),phone:$("#party-phone").value.trim()||null,address:$("#party-address").value.trim()||null,opening_balance:Number($("#party-opening").value||0),notes:$("#party-notes").value.trim()||null};const {error}=await db.from("erp_parties").insert(row);if(error){notice("تعذر حفظ البيانات: "+error.message,true);return;}notice("تم حفظ بيانات الطرف بنجاح.");$("#party-form").reset();$("#party-form-panel").hidden=true;await loadParties();};
+$("#party-form").onsubmit=async e=>{e.preventDefault();const args={p_party_type:$("#party-type").value,p_name:$("#party-name").value.trim(),p_phone:$("#party-phone").value.trim()||null,p_address:$("#party-address").value.trim()||null,p_opening_balance:Number($("#party-opening").value||0),p_notes:$("#party-notes").value.trim()||null};const {error}=await db.rpc("erp_create_party",args);if(error){notice("تعذر حفظ البيانات: "+error.message,true);return;}notice("تم حفظ بيانات الطرف بنجاح.");$("#party-form").reset();$("#party-form-panel").hidden=true;await loadParties();};
 async function openParty(id){
  activeParty=parties.find(p=>p.id===id);if(!activeParty)return;
  $("#party-ledger-panel").hidden=false;$("#party-ledger-title").textContent="كشف حساب: "+activeParty.name;
