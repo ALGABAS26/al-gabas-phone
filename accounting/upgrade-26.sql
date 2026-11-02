@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION public.erp_record_expense(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION public.erp_transfer_cash(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
@@ -166,7 +166,7 @@ CREATE OR REPLACE FUNCTION public.erp_create_purchase(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, pg_temp
 AS $func$
 DECLARE
   v_owner uuid := auth.uid();
