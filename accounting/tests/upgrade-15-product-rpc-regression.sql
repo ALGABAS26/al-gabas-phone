@@ -88,7 +88,36 @@ begin
     raise exception 'FAIL: product row remained after serial-unit insert failed; atomic rollback broken';
   end if;
 
-  -- Case 5: unauthenticated invocation must be rejected.
+  -- Case 5: non-finite numeric prices must be rejected.
+  v_failed := false;
+  begin
+    perform public.erp_create_product_with_optional_imei(
+      'RPC test NaN cost', 'test', 'new', 'NaN'::numeric, 150, 1,
+      'TEST-NAN-COST-' || replace(gen_random_uuid()::text,'-',''),
+      null, null
+    );
+  exception when others then
+    v_failed := true;
+  end;
+  if not v_failed then
+    raise exception 'FAIL: NaN cost price was accepted';
+  end if;
+
+  v_failed := false;
+  begin
+    perform public.erp_create_product_with_optional_imei(
+      'RPC test infinite sale', 'test', 'new', 100, 'Infinity'::numeric, 1,
+      'TEST-INF-SALE-' || replace(gen_random_uuid()::text,'-',''),
+      null, null
+    );
+  exception when others then
+    v_failed := true;
+  end;
+  if not v_failed then
+    raise exception 'FAIL: infinite sale price was accepted';
+  end if;
+
+  -- Case 6: unauthenticated invocation must be rejected.
   perform set_config('request.jwt.claim.sub', '', true);
   v_failed := false;
   begin
