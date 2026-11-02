@@ -1,6 +1,6 @@
 # AL GABAS STORE — SaaS Multi-Shop Architecture Plan
 
-Status: design only. This document does not change the database, live shop data, authentication, or storefront.
+Status: phased implementation in progress. Upgrade 13 is an additive foundation only; it does not change existing RLS/RPC authorization or enable other shops. Production multi-shop access is not yet enabled.
 
 ## 1. Current boundary
 
@@ -97,6 +97,6 @@ Do not apply tenant migrations to the current production Supabase project until:
 - a restorable backup and rollback plan exist;
 - the shop owner explicitly approves the production cutover.
 
-## 9. Current production caution
+## 9. Upgrade 13 — additive foundation (prepared, not yet confirmed run)\n\n`upgrade-13.sql` creates the shop, membership, subscription, and audit tables; adds nullable `shop_id` columns to the current ERP tables; seeds one initial shop per existing ERP owner; backfills existing rows; and aborts the transaction if any owner-owned row remains unassigned. Existing `owner_id` RLS policies and business RPCs are deliberately left unchanged. New management tables have RLS enabled without client policies, so they remain inaccessible from the app until a later reviewed upgrade adds controlled access.\n\nRun it only after upgrades 08–12 have been applied successfully in order. It is not the multi-tenant release: do not invite another shop or share the current login. A later upgrade must add shop-aware write defaults, membership authorization, composite tenant constraints, role enforcement, and frontend shop selection as one coordinated release.\n\n## 10. Current production caution
 
 The existing `upgrade-08.sql` through `upgrade-12.sql` are also not confirmed applied. They must be validated in a separate test project first and applied in their documented order only after explicit approval. Do not run them or any future SaaS migration on production as an experiment.
