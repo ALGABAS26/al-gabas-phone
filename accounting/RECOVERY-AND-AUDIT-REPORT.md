@@ -138,3 +138,40 @@ No SQL has been run and no production data, grants, app code, or storefront reso
 - Upgrade 14 is the exception: `erp_my_shop_profile()` explicitly revokes all from `public,anon` before granting authenticated.
 - Most write RPCs are `SECURITY INVOKER` and check `auth.uid()`, so this is not proof that anonymous writes currently succeed. It is nevertheless an ACL least-privilege gap: relying on an internal null-auth check is weaker than preventing anonymous EXECUTE at the permission layer.
 - Remediation must inventory exact overload signatures, revoke from `PUBLIC` and `anon`, then grant only the intended role(s). Preserve authenticated EXECUTE where the app needs it, and account for invoker-rights calls between RPCs/helpers. Do not apply broad blanket revokes without testing every app and trigger path.
+
+
+### Third-pass relationship and transaction-path inventory (2026-11-02)
+
+#### Concrete owner-aware relationship inventory
+The following foreign keys in the checked migrations reference a parent UUID without including `owner_id` in the relationship. Child-table RLS only checks the child row's owner:
+- `erp_product_units.product_id -> erp_products.id` (schema.sql)
+- `erp_sales_invoice_items.invoice_id -> erp_sales_invoices.id` and `product_id -> erp_products.id`; `erp_sales_payments.invoice_id -> erp_sales_invoices.id` (upgrade 04)
+- `erp_purchase_invoices.supplier_id -> erp_parties.id`; purchase items reference invoice and product; purchase payments reference invoice (upgrade 06)
+- `erp_party_transactions.party_id -> erp_parties.id` (upgrade 05)
+- `erp_stock_count_items.count_id -> erp_stock_counts.id` and `product_id -> erp_products.id` (upgrade 08)
+- `erp_returns.party_id -> erp_parties.id`; return items reference return and product (upgrade 08)
+- sale/purchase IMEI mapping rows reference invoice-item and product-unit UUIDs (upgrades 11-12).
+
+These are not all proven exploitable through the normal RPCs: sale, purchase, and return RPCs do owner-filtered parent lookups. The risk is the combination of authenticated direct table-write grants and child-row RLS that does not itself enforce same-owner parentage. Some relationships also need product/invoice-line consistency, not merely same owner.
+
+#### Existing partial safeguard and missing counterpart
+- `erp_guard_purchase_unit_link()` validates owner and product consistency for purchase IMEI mappings.
+- The sale mapping trigger `erp_link_sold_units_to_sale_line()` has no equivalent guard on direct inserts/updates to `erp_sales_invoice_item_units`.
+- Return-item IMEI triggers validate serial availability against the return type and invoice-item link, but a direct client insert still needs robust validation that the referenced invoice item belongs to the invoice recorded on the return, and that product/owner match.
+- The current return RPC performs these checks along its own path; the table constraints/triggers should enforce integrity even if a client bypasses that RPC.
+
+#### Cash and invoice atomicity observations
+- Sale and purchase RPCs execute their inventory, invoice, payment, party-ledger, and cash-movement changes in one PostgreSQL function transaction. Replacing browser writes must preserve this atomicity rather than splitting a single workflow into multiple client requests.
+- `erp_transfer_cash` locks both account rows in sorted account-code order and creates two source-linked movements; preserve this behavior.
+- The cash movement balance trigger is a shared invariant. New RPCs should call/insert through it rather than bypassing it or duplicating a weaker balance check.
+- Fawry closing currently has a stable source ID for its top-up movement, but it does not serialize competing edits to the same owner/date or enforce a complete later-day chain policy.
+
+#### Migration design requirements (not yet implemented)
+1. Add unique constraints on `(owner_id,id)` to parent tables where needed, then composite foreign keys such as child `(owner_id,parent_id)` -> parent `(owner_id,id)`. Before adding constraints, run read-only duplicate/orphan/cross-owner diagnostics and decide safe remediation for any existing bad rows.
+2. Add BEFORE triggers for multi-column relationships that need extra invariants (for example sale/purchase invoice line product must equal return-item product; invoice-line and product-unit must belong to same owner and same product).
+3. For sale IMEI linking, select the exact units changed from `in_stock` to `sold` by the current invoice transaction, rather than all sold-but-unmapped units. Consider passing a transaction-scoped correlation key or changing the RPC to insert the mapping explicitly after it selects/updates exact unit IDs. Add a legacy-data test before migration.
+4. Keep the existing owner-derived `auth.uid()` write model. Never accept client-supplied owner IDs as authority in new RPCs.
+5. Do not remove direct table grants until all eight UI workflows have RPC replacements and tests proving equivalent validation, atomicity, UI refresh, and failure behavior.
+6. For every new RPC, explicitly set `search_path`, validate null/type/range, revoke default `PUBLIC`/anon EXECUTE on the exact function signature, and grant only intended roles.
+
+No migration or database change was executed as part of this inventory.
