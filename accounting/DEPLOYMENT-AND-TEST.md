@@ -21,6 +21,12 @@ Run each migration once, in order, in the Supabase SQL Editor, only after the co
 - Transfers between cash accounts are movements, not sales or expenses.
 - The backup export includes the cash transfer ledger.
 
+## IMEI receiving and return behavior
+- Upgrade 12 records one or two validated 15-digit IMEI values for each tracked purchased device and links each unit to its exact purchase invoice line.
+- IMEI check digits are validated in the database with Luhn; duplicate values are prevented by the product-unit uniqueness constraints.
+- For tracked products, returns are currently FIFO: the database marks the oldest still-available unit linked to the exact original invoice line as returned. The operator does not select a specific serial in the return screen yet; this limitation is disclosed in the UI.
+- Upgrade 12 has been repaired for SQL delimiter/truncated duplicate-tail issues and reviewed structurally, but has not been executed against the live Supabase database. It must still be tested on a separate test project before production.
+
 ## Final verification checklist
 After all migrations are applied, test with disposable products and small values:
 - Create a non-IMEI product, purchase it, and confirm quantity and cash decrease.
