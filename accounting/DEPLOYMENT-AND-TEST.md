@@ -25,10 +25,10 @@ Run each migration once, in order, in the Supabase SQL Editor, after taking a re
 - Upgrade 12 records one or two validated 15-digit IMEI values for each tracked purchased device and links each unit to its exact purchase invoice line.
 - IMEI check digits are validated in the database with Luhn; duplicate values are prevented by the product-unit uniqueness constraints.
 - For tracked products, returns are currently FIFO: the database marks the oldest still-available unit linked to the exact original invoice line as returned. The operator does not select a specific serial in the return screen yet; this limitation is disclosed in the UI.
-- Upgrade 12 has been repaired for SQL delimiter/truncated duplicate-tail issues and reviewed structurally, but has not been executed against the live Supabase database. It must still be tested on a separate test project before production.
+- The owner reports that `upgrade-12.sql` was executed successfully as part of upgrades 08–14. This report has not been independently verified. Its behavior still needs to be tested in a separate Supabase test project before any SaaS production cutover.
 
-## Final verification checklist
-After all migrations are applied, test with disposable products and small values:
+## Functional verification checklist
+The owner has reported the migrations above as applied. Use disposable products and small values for any additional functional verification:
 - Create a non-IMEI product, purchase it, and confirm quantity and cash decrease.
 - Purchase a tracked device with one IMEI; verify the product unit and purchase-line mapping are created.
 - Purchase a dual-SIM tracked device with two distinct IMEIs; verify both serials are stored.
