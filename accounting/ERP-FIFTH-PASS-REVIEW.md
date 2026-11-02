@@ -158,3 +158,20 @@ The replacement keeps the existing RPC signature and stable close UUID as the `f
 The staging regression covers predecessor/successor continuity, rejection of a historical edit that breaks the next close, and NULL input rejection. It also documents a two-session adjacent-day concurrency procedure.
 
 **Pending verification:** migration and test have not been run or parsed by PostgreSQL in this chat. The two-session test, cash-balance trigger interaction when a nonzero top-up is saved/edited/deleted, and staging schema compatibility remain unverified. The owner advisory lock only coordinates callers using this RPC; direct table writes remain possible under the existing authenticated table grants and must be addressed in the broader write-path/ACL hardening package.
+
+
+## Upgrade 26 implementation note — NULL-safe RPC validation
+
+A draft implementation now exists in `accounting/upgrade-26.sql`, with a rollback-based staging regression script in `accounting/tests/upgrade-26-rpc-validation-regression.sql`.
+
+The migration replaces three existing RPCs without changing their signatures:
+
+- `erp_record_expense`: explicitly rejects NULL/blank category or description, NULL/non-finite/non-positive amount, and NULL/invalid account before writing either the expense or its cash outflow.
+- `erp_transfer_cash`: explicitly rejects NULL/invalid source and destination accounts, same-account transfers, and NULL/non-finite/non-positive amount. It retains stable account-row locking, available-balance validation, the transfer record, and paired cash movements.
+- `erp_create_purchase`: explicitly rejects SQL NULL/non-array/empty item lists, NULL/non-array payments, malformed array elements, missing/invalid product IDs, quantities and costs, malformed IMEI-unit arrays, and malformed payment entries before invoice or inventory writes. It preserves weighted-average product cost, inventory receiving, IMEI Luhn validation and purchase-line mappings, supplier ledger entries, payment rows, and cash outflows.
+
+Client EXECUTE is explicitly revoked from PUBLIC and anon and granted to authenticated for these three RPC signatures. This does not remove authenticated direct table DML; that remains a separate ACL/dependency-hardening task.
+
+The regression script checks expense and transfer NULL inputs, purchase NULL arrays/elements, and that rejected purchase requests do not change product quantity or cash-movement count. It also documents positive-path and IMEI staging checks.
+
+**Pending verification:** no PostgreSQL parser/runtime execution occurred in this chat. The purchase RPC body is a source-preserving hardening rewrite and still needs comparison against the live staging schema and positive-path regression coverage, including weighted-average cost, supplier balance, payment/cash linkage, and IMEI unit mapping. No production SQL was run.
