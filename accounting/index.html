@@ -58,6 +58,12 @@
 <label>المبلغ<input id="cash-amount" type="number" min="0.01" step="0.01" required></label>
 <label>البيان<input id="cash-description" required placeholder="مثال: إيداع نقدية"></label>
 <div class="wide"><button class="primary" type="submit">حفظ الحركة</button></div></form></div>
+<div class="panel"><h3>تحويل بين الحسابات</h3><p class="muted">ينقل المبلغ بين درج الكاش وفودافون كاش وإنستا باي دون اعتباره إيرادًا أو مصروفًا، ويتحقق من الرصيد قبل التنفيذ.</p><form id="cash-transfer-form" class="form-grid">
+<label>من حساب<select id="transfer-from"><option value="drawer">درج الكاش</option><option value="vodafone_cash">فودافون كاش</option><option value="instapay">إنستا باي</option></select></label>
+<label>إلى حساب<select id="transfer-to"><option value="vodafone_cash">فودافون كاش</option><option value="drawer">درج الكاش</option><option value="instapay">إنستا باي</option></select></label>
+<label>المبلغ<input id="transfer-amount" type="number" min="0.01" step="0.01" required></label>
+<label>البيان<input id="transfer-notes" placeholder="اختياري"></label>
+<div class="wide"><button class="primary" type="submit">تنفيذ التحويل</button></div></form></div>
 <div class="panel"><h3>آخر حركات الخزنة</h3><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الحساب</th><th>الحركة</th><th>المبلغ</th><th>البيان</th></tr></thead><tbody id="cash-movements-body"></tbody></table></div></div>
 </section>
 <section class="page" id="page-sales" hidden>
