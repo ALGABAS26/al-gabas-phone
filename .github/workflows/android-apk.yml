@@ -90,11 +90,18 @@ jobs:
           p.write_text(s)
           PYCODE
 
+      
       - name: Build signed release APK and AAB
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ runner.temp }}/al-gabas-upload-key.jks
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease bundleRelease
+          
 
       - name: Verify signed release APK and AAB
         run: |
