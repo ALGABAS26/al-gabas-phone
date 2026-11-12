@@ -75,15 +75,22 @@ jobs:
           echo 'Adaptive launcher icon foreground generated from AL GABAS image.'
           npx cap sync android
           mkdir -p android/app/src/main/res/values
-          cat > android/app/src/main/res/values/strings.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <string name="app_name">Algabas system</string>
-          </resources>
-          EOF
-          test -f android/app/src/main/res/values/strings.xml
-          grep -q '<string name="app_name">Algabas system</string>' android/app/src/main/res/values/strings.xml
-          echo 'Verified Android app label: Algabas system'
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+          p = Path('android/app/src/main/res/values/strings.xml')
+          s = p.read_text() if p.exists() else '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
+          if re.search(r'<string\\s+name="app_name">.*?</string>', s, re.S):
+              s = re.sub(r'(<string\\s+name="app_name">).*?(</string>)', r'\\1Algabas system\\2', s, count=1, flags=re.S)
+          else:
+              s = s.replace('</resources>', '    <string name="app_name">Algabas system</string>\n</resources>')
+          p.write_text(s)
+          required = ['app_name', 'title_activity_main']
+          for name in required:
+              if not re.search(r'<string\\s+name="' + name + r'">', s):
+                  raise SystemExit(f'Missing required Android string: {name}')
+          print('Verified app_name and preserved title_activity_main')
+          PYCODE
 
       - name: Configure Android release signing
         env:
