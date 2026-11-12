@@ -38,7 +38,10 @@ jobs:
           sudo apt-get install -y imagemagick
           cp -R accounting/. www/
           cp config.js www/config.js
-          convert accounting/app-icon.png -fuzz 4% -trim +repage -gravity center -background white -extent '%[fx:max(w,h)]x%[fx:max(w,h)]' -resize 1024x1024 assets/icon-only.png
+          magick accounting/app-icon.png -fuzz 4% -trim +repage /tmp/al-gabas-icon-trim.png
+          read icon_width icon_height < <(identify -format '%w %h' /tmp/al-gabas-icon-trim.png)
+          icon_size=$(( icon_width > icon_height ? icon_width : icon_height ))
+          magick /tmp/al-gabas-icon-trim.png -gravity center -background white -extent "${icon_size}x${icon_size}" -resize 1024x1024 assets/icon-only.png
           cp assets/icon-only.png assets/icon-foreground.png
           python3 - <<'PYCODE'
           import struct, zlib, binascii
