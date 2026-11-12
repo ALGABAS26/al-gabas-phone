@@ -34,6 +34,8 @@ jobs:
       - name: Add Android platform and generate branded icons
         run: |
           mkdir -p www assets
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
           cp -R accounting/. www/
           cp config.js www/config.js
           convert accounting/app-icon.png -fuzz 4% -trim +repage -gravity center -background white -extent '%[fx:max(w,h)]x%[fx:max(w,h)]' -resize 1024x1024 assets/icon-only.png
