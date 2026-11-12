@@ -36,20 +36,7 @@ jobs:
           mkdir -p www assets
           cp -R accounting/. www/
           cp config.js www/config.js
-          node <<'NODE'
-          const fs = require('fs');
-          const sharp = require('sharp');
-          const svg = fs.readFileSync('accounting/store-icon.svg', 'utf8');
-          const match = svg.match(/data:image\/png;base64,([^"]+)/);
-          if (!match) throw new Error('The store icon SVG does not contain its embedded PNG image.');
-          const source = Buffer.from(match[1], 'base64');
-          sharp(source)
-            .resize(1024, 1024, { fit: 'contain' })
-            .png()
-            .toFile('assets/logo.png')
-            .then(() => console.log('Created 1024x1024 PNG app icon from the store logo.'))
-            .catch((error) => { console.error(error); process.exit(1); });
-          NODE
+          cp logo.svg assets/logo.svg
           npx cap add android
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           npx cap sync android
