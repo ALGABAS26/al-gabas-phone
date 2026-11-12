@@ -31,12 +31,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install logo font
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-lobstertwo
+          fc-cache -f
+
       - name: Add Android platform and generate branded icons
         run: |
           mkdir -p www assets
           cp -R accounting/. www/
           cp config.js www/config.js
-          cp logo.svg assets/logo.svg
+          cp accounting/app-icon.svg assets/logo.svg
           npx cap add android
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           npx cap sync android
