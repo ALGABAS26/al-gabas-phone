@@ -1,4 +1,4 @@
-name: Build Al Gabas Store Android APK
+name: Build AG system Android app
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
           sudo apt-get install -y imagemagick
           cp -R accounting/. www/
           cp config.js www/config.js
-          magick -background white accounting/app-icon.svg -resize 1024x1024 assets/icon-only.png
+          magick -background '#1877F2' accounting/app-icon.svg -resize 1024x1024 assets/icon-only.png
           cp assets/icon-only.png assets/icon-foreground.png
           identify -format 'Prepared approved vector icon: %wx%h\n' assets/icon-only.png
           python3 - <<'PYCODE'
@@ -47,7 +47,7 @@ jobs:
           width = height = 1024
           def chunk(kind, data):
               return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', binascii.crc32(kind + data) & 0xffffffff)
-          row = b'\x00' + (b'\xff\xff\xff' * width)
+          row = b'\x00' + (bytes((24, 119, 242)) * width)
           raw = row * height
           png = (b'\x89PNG\r\n\x1a\n'
                  + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
@@ -56,12 +56,12 @@ jobs:
           Path('assets/icon-background.png').write_bytes(png)
           PYCODE
           npx cap add android
-          npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
+          npx @capacitor/assets generate --android --iconBackgroundColor '#1877F2' --splashBackgroundColor '#ffffff'
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
           test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png
           grep -q 'ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          echo 'Adaptive launcher icon foreground generated from AL GABAS image.'
+          echo 'Adaptive launcher icon generated for AG system.'
           npx cap sync android
           mkdir -p android/app/src/main/res/values
           python3 - <<'PYCODE'
@@ -75,7 +75,7 @@ jobs:
           else:
               root = ET.Element('resources')
               tree = ET.ElementTree(root)
-          values = {'app_name': 'Algabas system', 'title_activity_main': 'Algabas system'}
+          values = {'app_name': 'AG system', 'title_activity_main': 'AG system'}
           for name, value in values.items():
               node = root.find(f"string[@name='{name}']")
               if node is None:
@@ -88,7 +88,7 @@ jobs:
               node = check.find(f"string[@name='{name}']")
               if node is None or node.text != value:
                   raise SystemExit(f'Failed to set Android string {name}')
-          print('Verified Android labels: app_name and title_activity_main = Algabas system')
+          print('Verified Android labels: app_name and title_activity_main = AG system')
           PYCODE
 
       - name: Configure Android release signing
@@ -169,7 +169,7 @@ jobs:
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: al-gabas-store-signed-release-apk
+          name: ag-system-signed-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
@@ -177,7 +177,7 @@ jobs:
       - name: Upload signed AAB for Google Play
         uses: actions/upload-artifact@v4
         with:
-          name: al-gabas-store-signed-release-aab
+          name: ag-system-signed-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
