@@ -38,9 +38,9 @@ jobs:
           sudo apt-get install -y imagemagick
           cp -R accounting/. www/
           cp config.js www/config.js
-          cp accounting/app-icon.png assets/icon-only.png
-          cp accounting/app-icon.png assets/icon-foreground.png
-          identify -format 'Prepared approved icon: %wx%h\n' assets/icon-only.png
+          magick -background white accounting/app-icon-approved.svg -resize 1024x1024 assets/icon-only.png
+          cp assets/icon-only.png assets/icon-foreground.png
+          identify -format 'Prepared approved vector icon: %wx%h\n' assets/icon-only.png
           python3 - <<'PYCODE'
           import struct, zlib, binascii
           from pathlib import Path
