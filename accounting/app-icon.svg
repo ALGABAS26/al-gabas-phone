@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect width="1024" height="1024" fill="#ffffff"/>
-  <g fill="#000000" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="900">
-    <text x="512" y="445" font-size="230" textLength="880" lengthAdjust="spacingAndGlyphs">AL GABAS</text>
-    <text x="512" y="680" font-size="205" textLength="700" lengthAdjust="spacingAndGlyphs">SYSTEM</text>
+  <rect width="1024" height="1024" fill="#1877F2"/>
+  <g fill="#FFFFFF" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="900">
+    <text x="512" y="625" font-size="610">G</text>
+    <text x="512" y="825" font-size="142" textLength="650" lengthAdjust="spacingAndGlyphs">SYSTEM</text>
   </g>
 </svg>
