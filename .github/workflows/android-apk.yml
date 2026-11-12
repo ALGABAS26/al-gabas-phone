@@ -1,5 +1,8 @@
 name: Build AG system Android app
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -181,3 +184,14 @@ jobs:
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish public GitHub Release downloads
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ag-system-${{ github.run_number }}
+          name: AG system Android build #${{ github.run_number }}
+          body: Signed AG system Android installation files.
+          files: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+          make_latest: true
