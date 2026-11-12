@@ -38,9 +38,9 @@ jobs:
           sudo apt-get install -y imagemagick
           cp -R accounting/. www/
           cp config.js www/config.js
-          magick accounting/app-icon.png -crop 1310x1310+113+113 +repage -contrast-stretch 0.5%x0.5% -unsharp 0x1.4+1.8+0.02 -filter Lanczos -resize 1024x1024 assets/icon-only.png
-          identify -format 'Prepared icon: %wx%h\n' assets/icon-only.png
-          cp assets/icon-only.png assets/icon-foreground.png
+          cp accounting/app-icon.png assets/icon-only.png
+          cp accounting/app-icon.png assets/icon-foreground.png
+          identify -format 'Prepared approved icon: %wx%h\n' assets/icon-only.png
           python3 - <<'PYCODE'
           import struct, zlib, binascii
           from pathlib import Path
