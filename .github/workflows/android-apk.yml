@@ -38,10 +38,15 @@ jobs:
           cp config.js www/config.js
           cp accounting/app-icon.png assets/icon-only.png
           cp accounting/app-icon.png assets/icon-foreground.png
+          python3 - <<'PYCODE'
+          from PIL import Image
+          Image.new('RGB', (1024, 1024), (255, 255, 255)).save('assets/icon-background.png')
+          PYCODE
           npx cap add android
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png
           grep -q 'ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           echo 'Adaptive launcher icon foreground generated from AL GABAS image.'
           npx cap sync android
