@@ -56,17 +56,6 @@ jobs:
           Path('assets/icon-background.png').write_bytes(png)
           PYCODE
           npx cap add android
-          python3 - <<'PYCODE'
-          from pathlib import Path
-          import re
-          p = Path('android/app/src/main/res/values/strings.xml')
-          s = p.read_text()
-          s, count = re.subn(r'(<string name="app_name">).*?(</string>)', r'\\1Algabas system\\2', s, count=1)
-          if count != 1:
-              raise SystemExit('Could not set Android launcher app name')
-          p.write_text(s)
-          print('Android launcher label set to Algabas system')
-          PYCODE
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
@@ -77,19 +66,29 @@ jobs:
           mkdir -p android/app/src/main/res/values
           python3 - <<'PYCODE'
           from pathlib import Path
-          import re
+          import xml.etree.ElementTree as ET
           p = Path('android/app/src/main/res/values/strings.xml')
-          s = p.read_text() if p.exists() else '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
-          if re.search(r'<string\\s+name="app_name">.*?</string>', s, re.S):
-              s = re.sub(r'(<string\\s+name="app_name">).*?(</string>)', r'\\1Algabas system\\2', s, count=1, flags=re.S)
+          p.parent.mkdir(parents=True, exist_ok=True)
+          if p.exists():
+              tree = ET.parse(p)
+              root = tree.getroot()
           else:
-              s = s.replace('</resources>', '    <string name="app_name">Algabas system</string>\n</resources>')
-          p.write_text(s)
-          required = ['app_name', 'title_activity_main']
-          for name in required:
-              if not re.search(r'<string\\s+name="' + name + r'">', s):
-                  raise SystemExit(f'Missing required Android string: {name}')
-          print('Verified app_name and preserved title_activity_main')
+              root = ET.Element('resources')
+              tree = ET.ElementTree(root)
+          values = {'app_name': 'Algabas system', 'title_activity_main': 'Algabas system'}
+          for name, value in values.items():
+              node = root.find(f"string[@name='{name}']")
+              if node is None:
+                  node = ET.SubElement(root, 'string', {'name': name})
+              node.text = value
+          ET.indent(tree, space='    ')
+          tree.write(p, encoding='utf-8', xml_declaration=True)
+          check = ET.parse(p).getroot()
+          for name, value in values.items():
+              node = check.find(f"string[@name='{name}']")
+              if node is None or node.text != value:
+                  raise SystemExit(f'Failed to set Android string {name}')
+          print('Verified Android labels: app_name and title_activity_main = Algabas system')
           PYCODE
 
       - name: Configure Android release signing
