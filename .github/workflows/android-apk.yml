@@ -39,8 +39,18 @@ jobs:
           cp accounting/app-icon.png assets/icon-only.png
           cp accounting/app-icon.png assets/icon-foreground.png
           python3 - <<'PYCODE'
-          from PIL import Image
-          Image.new('RGB', (1024, 1024), (255, 255, 255)).save('assets/icon-background.png')
+          import struct, zlib, binascii
+          from pathlib import Path
+          width = height = 1024
+          def chunk(kind, data):
+              return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', binascii.crc32(kind + data) & 0xffffffff)
+          row = b'\x00' + (b'\xff\xff\xff' * width)
+          raw = row * height
+          png = (b'\x89PNG\r\n\x1a\n'
+                 + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+                 + chunk(b'IDAT', zlib.compress(raw, 9))
+                 + chunk(b'IEND', b''))
+          Path('assets/icon-background.png').write_bytes(png)
           PYCODE
           npx cap add android
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
