@@ -56,6 +56,17 @@ jobs:
           Path('assets/icon-background.png').write_bytes(png)
           PYCODE
           npx cap add android
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+          p = Path('android/app/src/main/res/values/strings.xml')
+          s = p.read_text()
+          s, count = re.subn(r'(<string name="app_name">).*?(</string>)', r'\\1Algabas system\\2', s, count=1)
+          if count != 1:
+              raise SystemExit('Could not set Android launcher app name')
+          p.write_text(s)
+          print('Android launcher label set to Algabas system')
+          PYCODE
           npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
