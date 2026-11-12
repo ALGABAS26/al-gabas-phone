@@ -74,6 +74,16 @@ jobs:
           grep -q 'ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           echo 'Adaptive launcher icon foreground generated from AL GABAS image.'
           npx cap sync android
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Algabas system</string>
+          </resources>
+          EOF
+          test -f android/app/src/main/res/values/strings.xml
+          grep -q '<string name="app_name">Algabas system</string>' android/app/src/main/res/values/strings.xml
+          echo 'Verified Android app label: Algabas system'
 
       - name: Configure Android release signing
         env:
