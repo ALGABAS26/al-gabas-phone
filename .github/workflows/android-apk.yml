@@ -36,8 +36,8 @@ jobs:
           mkdir -p www assets
           cp -R accounting/. www/
           cp config.js www/config.js
-          cp accounting/app-icon.png assets/icon-only.png
-          cp accounting/app-icon.png assets/icon-foreground.png
+          convert accounting/app-icon.png -fuzz 4% -trim +repage -gravity center -background white -extent '%[fx:max(w,h)]x%[fx:max(w,h)]' -resize 1024x1024 assets/icon-only.png
+          cp assets/icon-only.png assets/icon-foreground.png
           python3 - <<'PYCODE'
           import struct, zlib, binascii
           from pathlib import Path
