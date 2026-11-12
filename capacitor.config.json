@@ -1,6 +1,6 @@
 {
   "appId": "com.algabas.store",
-  "appName": "Algabas system",
+  "appName": "AG system",
   "webDir": "www",
   "server": {
     "androidScheme": "https"
