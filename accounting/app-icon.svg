@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <rect width="1024" height="1024" fill="#ffffff"/>
   <g fill="#000000" text-anchor="middle">
-    <text x="512" y="565" font-family="Lobster Two" font-size="190" font-weight="700" letter-spacing="-5">AL GABAS</text>
-    <text x="512" y="700" font-family="Lobster Two" font-size="104" font-weight="700">System</text>
+    <text x="512" y="500" font-family="DejaVu Sans, Arial, sans-serif" font-size="230" font-weight="800" letter-spacing="-8">AL GABAS</text>
+    <text x="512" y="690" font-family="DejaVu Sans, Arial, sans-serif" font-size="160" font-weight="800">SYSTEM</text>
   </g>
 </svg>
