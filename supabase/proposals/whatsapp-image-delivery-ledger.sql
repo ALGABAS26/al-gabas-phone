@@ -1,4 +1,5 @@
 -- PROPOSAL ONLY — do not run against the live project without explicit owner approval.
+-- Before enabling PostgREST access, verify this table is included in the project's exposed Data API schemas.
 -- Create the WhatsApp delivery ledger after review, using a proper Supabase migration.
 create table if not exists public.erp_whatsapp_invoice_deliveries (
   id uuid primary key default gen_random_uuid(),
