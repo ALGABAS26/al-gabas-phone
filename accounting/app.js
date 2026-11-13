@@ -92,11 +92,83 @@ function saleCalc(){
  const total=Math.max(0,subtotal-Number($("#sale-discount").value||0)),paid=["drawer","vodafone","instapay"].reduce((s,k)=>s+Number($("#sale-pay-"+k).value||0),0);
  $("#sale-total").textContent=money(total);$("#sale-paid").textContent=money(paid);$("#sale-remaining").textContent="المتبقي: "+money(Math.max(0,total-paid));
 }
+
+function drawSaleInvoicePng(inv,items,settings){
+ const width=1200,pad=64,rowHeight=76,headerHeight=230,tableTop=headerHeight+40;
+ const height=tableTop+92+items.length*rowHeight+330;
+ const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+ const ctx=canvas.getContext("2d");
+ ctx.fillStyle="#eef2f7";ctx.fillRect(0,0,width,height);
+ const text=(value,x,y,size,color,align="right",weight="normal",max=1000)=>{
+  ctx.font=weight+" "+size+"px 'Noto Naskh Arabic', Tahoma, Arial, sans-serif";
+  ctx.fillStyle=color;ctx.textAlign=align;ctx.direction=align==="right"?"rtl":"ltr";
+  ctx.fillText(String(value??""),x,y,max);
+ };
+ ctx.fillStyle="#fff";ctx.fillRect(24,24,width-48,height-48);
+ ctx.fillStyle="#123b68";ctx.fillRect(24,24,width-48,headerHeight);
+ text(settings.shop_name||"الجباس فون",width-pad,102,48,"#fff","right","bold",width-2*pad);
+ text(settings.shop_name_en||"AL GABAS PHONE",width-pad,148,23,"#dbeafe","right","normal",width-2*pad);
+ text([settings.phone,settings.address].filter(Boolean).join(" • "),width-pad,190,21,"#e5edf7","right","normal",width-2*pad);
+ text("فاتورة بيع",width-pad,headerHeight+40,36,"#123b68","right","bold");
+ text("رقم الفاتورة: "+inv.invoice_no,width-pad,tableTop+22,25,"#253247","right","bold");
+ text("التاريخ: "+inv.invoice_date,pad,tableTop+22,23,"#475569","left");
+ text("العميل: "+(inv.customer_name||"عميل نقدي"),width-pad,tableTop+62,23,"#475569","right");
+ text("الهاتف: "+(inv.customer_phone||"—"),pad,tableTop+62,22,"#475569","left");
+ const y0=tableTop+96;
+ ctx.fillStyle="#e8eef6";ctx.fillRect(pad,y0,width-2*pad,64);
+ text("الصنف",width-pad-20,y0+42,23,"#123b68","right","bold",440);
+ text("الكمية",760,y0+42,22,"#123b68","center","bold",130);
+ text("سعر الوحدة",520,y0+42,22,"#123b68","center","bold",180);
+ text("الإجمالي",pad+100,y0+42,22,"#123b68","center","bold",180);
+ items.forEach((item,index)=>{
+  const y=y0+64+index*rowHeight;
+  if(index%2===0){ctx.fillStyle="#f8fafc";ctx.fillRect(pad,y,width-2*pad,rowHeight);}
+  text(item.product_name,width-pad-20,y+47,23,"#172033","right","normal",440);
+  text(item.quantity,760,y+47,22,"#334155","center");
+  text(money(item.unit_price),520,y+47,21,"#334155","center");
+  text(money(item.line_total),pad+100,y+47,21,"#334155","center");
+  ctx.strokeStyle="#e2e8f0";ctx.beginPath();ctx.moveTo(pad,y+rowHeight);ctx.lineTo(width-pad,y+rowHeight);ctx.stroke();
+ });
+ const sumY=y0+64+items.length*rowHeight+42;
+ text("الإجمالي قبل الخصم",width-pad,sumY,23,"#475569","right");
+ text(money(inv.subtotal),pad+220,sumY,23,"#172033","left","bold");
+ text("الخصم",width-pad,sumY+48,23,"#475569","right");
+ text(money(inv.discount),pad+220,sumY+48,23,"#172033","left","bold");
+ ctx.fillStyle="#eaf2ff";ctx.fillRect(pad,sumY+76,width-2*pad,76);
+ text("الإجمالي النهائي",width-pad-22,sumY+124,28,"#123b68","right","bold");
+ text(money(inv.total),pad+220,sumY+124,28,"#123b68","left","bold");
+ text("المدفوع: "+money(inv.paid),width-pad,sumY+196,22,"#475569","right");
+ text("المتبقي: "+money(inv.remaining),pad+220,sumY+196,22,"#475569","left");
+ text(settings.invoice_note||"شكرًا لتعاملكم معنا",width/2,height-76,24,"#64748b","center","normal",width-2*pad);
+ return canvas.toDataURL("image/png");
+}
+async function sendSaleInvoiceImage(id,button,{silent=false}={}){
+ if(button)button.disabled=true;
+ try{
+  const [{data:inv,error:ie},{data:items,error:ite},{data:settings,error:se}]=await Promise.all([
+   db.from("erp_sales_invoices").select("*").eq("id",id).single(),
+   db.from("erp_sales_invoice_items").select("*").eq("invoice_id",id).order("product_name"),
+   db.from("erp_shop_settings").select("*").maybeSingle()
+  ]);
+  if(ie||ite||se)throw ie||ite||se;
+  if(!inv||inv.status!=="completed")throw new Error("لا يمكن إرسال فاتورة غير مكتملة أو ملغاة.");
+  if(!inv.customer_phone)throw new Error("لا يوجد رقم هاتف محفوظ للعميل في الفاتورة.");
+  if(!items||!items.length)throw new Error("لا توجد أصناف في الفاتورة.");
+  const dataUrl=drawSaleInvoicePng(inv,items,settings||{});
+  const imageBase64=dataUrl.substring(dataUrl.indexOf(",")+1);
+  const {data,error}=await db.functions.invoke("send-sale-invoice-image",{body:{invoice_id:id,image_base64:imageBase64}});
+  if(error)throw error;
+  if(!data?.ok)throw new Error(data?.error||"لم يؤكد واتساب إرسال الفاتورة.");
+  notice((silent?"تم إرسال صورة الفاتورة تلقائيًا. ":"تم إرسال صورة الفاتورة على واتساب. ")+"رقم الفاتورة: "+inv.invoice_no);
+  return true;
+ }catch(err){notice("تعذر إرسال صورة الفاتورة: "+(err.message||err),true);return false;}
+ finally{if(button)button.disabled=false;}
+}
 async function loadSales(){
  const [pr,inv]=await Promise.all([db.from("erp_products").select("id,name,quantity,sale_price").gt("quantity",0).order("name"),db.from("erp_sales_invoices").select("*").order("created_at",{ascending:false}).limit(100)]);
  if(pr.error||inv.error){notice("شغّل accounting/upgrade-04.sql في Supabase أولاً: "+(pr.error||inv.error).message,true);return;}
  products=pr.data||[];$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();if(!$("#sale-lines").children.length)saleAddLine();
- $("#sales-body").innerHTML=(inv.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-sale\" data-id=\""+x.id+"\">طباعة</button></td></tr>").join("")||"<tr><td colspan='6'>لا توجد فواتير مسجلة.</td></tr>";
+ $("#sales-body").innerHTML=(inv.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><div class='inline-actions'><button class='secondary print-sale' data-id='"+x.id+"'>طباعة</button><button class='secondary send-sale-whatsapp' data-id='"+x.id+"'>واتساب</button></div></td></tr>").join("")||"<tr><td colspan='7'>لا توجد فواتير مسجلة.</td></tr>";
 }
 $("#sale-add-line").onclick=saleAddLine;
 $("#sale-lines").onchange=e=>{const tr=e.target.closest("tr");if(e.target.classList.contains("sale-product")){const p=products.find(x=>x.id===e.target.value);if(p){tr.querySelector(".sale-price").value=p.sale_price;tr.querySelector(".sale-qty").max=p.quantity;}saleCalc();}};
@@ -110,7 +182,7 @@ $("#sale-form").onsubmit=async e=>{
  const payments=[["drawer","sale-pay-drawer"],["vodafone_cash","sale-pay-vodafone"],["instapay","sale-pay-instapay"]].map(([account_code,id])=>({account_code,amount:Number($("#"+id).value||0)}));
  const args={p_invoice_no:$("#sale-no").value.trim(),p_invoice_date:$("#sale-date").value,p_customer_name:$("#sale-customer").value.trim()||"عميل نقدي",p_customer_phone:$("#sale-phone").value.trim()||null,p_discount:Number($("#sale-discount").value||0),p_notes:$("#sale-notes").value.trim()||null,p_items:items,p_payments:payments};
  const btn=e.submitter;if(btn)btn.disabled=true;
- try{const {error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();}
+ try{const {data:invoiceId,error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();if(window.WA_AUTO_SEND_ENABLED===true&&args.p_customer_phone&&invoiceId){await sendSaleInvoiceImage(invoiceId,null,{silent:true});}}
  catch(err){notice("لم يتم حفظ الفاتورة: "+(err.message||err),true);}
  finally{if(btn)btn.disabled=false;}
 };
@@ -283,7 +355,7 @@ $("#return-type").onchange=loadReturns;
 $("#return-invoice").onchange=async()=>{const id=$("#return-invoice").value,type=$("#return-type").value;$("#return-items").innerHTML="";if(!id)return;const table=type==="sale"?"erp_sales_invoice_items":"erp_purchase_invoice_items",price=type==="sale"?"unit_price":"unit_cost";const {data,error}=await db.from(table).select("id,product_id,product_name,quantity,"+price).eq("invoice_id",id);if(error){notice(error.message,true);return;}const {data:returned,error:re}=await db.from("erp_returns").select("id").eq("invoice_id",id).eq("return_type",type);if(re){notice(re.message,true);return;}const ids=(returned||[]).map(x=>x.id);let sums={};if(ids.length){const {data:ri,error:rie}=await db.from("erp_return_items").select("invoice_item_id,quantity").in("return_id",ids);if(rie){notice(rie.message,true);return;}(ri||[]).forEach(x=>sums[x.invoice_item_id]=(sums[x.invoice_item_id]||0)+Number(x.quantity));}returnInvoiceItems=(data||[]).map(x=>({...x,price:Number(x[price]||0),returned:sums[x.id]||0}));$("#return-items").innerHTML=returnInvoiceItems.map(x=>"<tr data-item='"+x.id+"'><td>"+esc(x.product_name)+"</td><td>"+x.quantity+"</td><td>"+x.returned+"</td><td><input class='return-qty' type='number' min='0' max='"+Math.max(0,x.quantity-x.returned)+"' value='0' step='1' style='width:85px'></td><td>"+money(x.price)+"</td></tr>").join("")||"<tr><td colspan='5'>لا توجد أصناف.</td></tr>";};
 $("#return-form").onsubmit=async e=>{e.preventDefault();const id=$("#return-invoice").value;if(!id){notice("اختر الفاتورة الأصلية.",true);return;}const items=[...$("#return-items").querySelectorAll("tr[data-item]")].map(tr=>({invoice_item_id:tr.dataset.item,quantity:Number(tr.querySelector(".return-qty").value)})).filter(x=>x.quantity>0);if(!items.length){notice("حدد كمية مرتجع لصنف واحد على الأقل.",true);return;}const type=$("#return-type").value;const payments=[["drawer","return-pay-drawer"],["vodafone_cash","return-pay-vodafone"],["instapay","return-pay-instapay"]].map(([account_code,k])=>({account_code,amount:Number($("#"+k).value||0)}));const b=e.submitter;if(b)b.disabled=true;try{const {error}=await db.rpc("erp_post_return",{p_return_no:$("#return-no").value.trim(),p_return_type:type,p_invoice_id:id,p_return_date:$("#return-date").value,p_notes:$("#return-notes").value.trim(),p_items:items,p_refund_payments:payments});if(error)throw error;notice("تم حفظ المرتجع وتحديث المخزون"+(type==="sale"?" وتسجيل رد المبلغ في الخزنة.":" وتحديث حساب المورد.") );$("#return-form").reset();$("#return-items").innerHTML="";await loadReturns();await loadProducts();await loadCashbox();await dashboard();}catch(err){notice("تعذر حفظ المرتجع: "+err.message,true);}finally{if(b)b.disabled=false;}};
 async function printInvoice(type,id){let w=null;try{w=window.open("","_blank");if(!w){notice("اسمح بفتح النوافذ المنبثقة لطباعة الفاتورة.",true);return;}w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><body style='font-family:Arial;text-align:center;padding:30px'>جاري تجهيز الفاتورة...</body></html>");const sales=type==="sale",head=sales?"erp_sales_invoices":"erp_purchase_invoices",itemsTable=sales?"erp_sales_invoice_items":"erp_purchase_invoice_items";const [{data:inv,error:ie},{data:items,error:ite},{data:settings}]=await Promise.all([db.from(head).select("*").eq("id",id).single(),db.from(itemsTable).select("*").eq("invoice_id",id),db.from("erp_shop_settings").select("*").maybeSingle()]);if(ie||ite)throw ie||ite;const s=settings||{},title=s.shop_name||"الجباس ستور",person=sales?inv.customer_name:inv.supplier_name;const rows=(items||[]).map(x=>"<tr><td>"+esc(x.product_name)+"</td><td>"+x.quantity+"</td><td>"+money(sales?x.unit_price:x.unit_cost)+"</td><td>"+money(x.line_total)+"</td></tr>").join("");w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><title>"+esc(inv.invoice_no)+"</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{text-align:center}p{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #aaa;padding:9px;text-align:right}.sum{margin-top:18px;font-weight:bold}.foot{text-align:center;margin-top:40px}</style><h1>"+esc(title)+"</h1><p>"+esc(s.shop_name_en||"AL GABAS STORE")+"<br>"+esc(s.address||"")+"<br>"+esc(s.phone||"")+"</p><hr><h2>"+(sales?"فاتورة بيع":"فاتورة شراء")+"</h2><p>رقم الفاتورة: "+esc(inv.invoice_no)+"　 التاريخ: "+esc(inv.invoice_date)+"<br>"+(sales?"العميل: ":"المورد: ")+esc(person||"—")+"</p><table><thead><tr><th>الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>"+rows+"</tbody></table><div class='sum'>الإجمالي: "+money(inv.total)+"<br>المدفوع: "+money(inv.paid)+"<br>المتبقي: "+money(inv.remaining)+"</div><p class='foot'>"+esc(s.invoice_note||"شكراً لتعاملكم معنا")+"</p><script>window.onload=()=>window.print()<\/script></html>");w.document.close();}catch(e){if(w&&!w.closed)w.close();notice("تعذرت طباعة الفاتورة: "+e.message,true);}}
-$("#sales-body").onclick=e=>{const b=e.target.closest(".print-sale");if(b)printInvoice("sale",b.dataset.id);};
+$("#sales-body").onclick=e=>{const print=e.target.closest(".print-sale"),send=e.target.closest(".send-sale-whatsapp");if(print)printInvoice("sale",print.dataset.id);if(send)sendSaleInvoiceImage(send.dataset.id,send);};
 $("#purchases-body").onclick=e=>{const b=e.target.closest(".print-purchase");if(b)printInvoice("purchase",b.dataset.id);};
 
 boot();
