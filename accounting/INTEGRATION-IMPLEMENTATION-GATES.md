@@ -18,7 +18,7 @@ Status: prototype code only. This branch is not deployed, merged, or enabled for
 
 ### Required setup before testing
 1. Review `supabase/proposals/whatsapp-image-delivery-ledger.sql`; it is a proposal, not an applied migration.
-2. Create a proper migration using the Supabase CLI after explicit approval; do not execute the proposal on production without review.
+2. Create a proper migration using the Supabase CLI after explicit approval; do not execute the proposal on production without review. Verify the table is exposed through the Data API settings, since new public tables are not automatically exposed by default.
 3. Deploy the Edge Function only after review and after the ledger exists.
 4. Configure server-only secrets: `WA_SEND_ENABLED=false`, `WA_ACCESS_TOKEN`, `WA_PHONE_NUMBER_ID`, `WA_IMAGE_TEMPLATE_NAME`, `WA_TEMPLATE_LANGUAGE`, and optionally `WA_GRAPH_API_VERSION`.
 5. The Meta template must be approved and have an IMAGE header. Use a Meta test sender and a test recipient first.
