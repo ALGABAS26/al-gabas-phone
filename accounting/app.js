@@ -163,7 +163,7 @@ async function sendSaleInvoiceImage(id,button,{silent=false}={}){
    throw new Error(serverMessage||error.message||"تعذر الاتصال بخدمة واتساب.");
   }
   if(!data?.ok)throw new Error(data?.error||"لم يؤكد واتساب إرسال الفاتورة.");
-  notice((silent?"تم إرسال صورة الفاتورة تلقائيًا. ":"تم إرسال صورة الفاتورة على واتساب. ")+"رقم الفاتورة: "+inv.invoice_no);
+  notice((silent?"واتساب قبل طلب إرسال صورة الفاتورة تلقائيًا. ":"واتساب قبل طلب إرسال صورة الفاتورة. ")+"رقم الفاتورة: "+inv.invoice_no);
   return true;
  }catch(err){notice("تعذر إرسال صورة الفاتورة: "+(err.message||err),true);return false;}
  finally{if(button)button.disabled=false;}
