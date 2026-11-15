@@ -28,3 +28,7 @@ The live project now has `private.erp_whatsapp_invoice_deliveries`, protected by
 - Only Egyptian mobile numbers beginning 010, 011, 012, or 015 are accepted by this first iteration.
 - WhatsApp business-initiated messages require a valid approved template. The template must contain an IMAGE header.
 - This branch has not been deployed, merged, or connected to live WhatsApp credentials.
+
+
+## Deployment and test gate
+Do not deploy this function until the Supabase Edge Function secret `SUPABASE_SERVICE_ROLE_KEY` is configured securely and the WhatsApp Cloud API secrets plus approved IMAGE-header template are available. Keep `WA_SEND_ENABLED=false` during deployment and initial smoke checks. A real message test requires explicit owner approval and a designated test recipient. Never paste secrets into chat or commit them to GitHub.
