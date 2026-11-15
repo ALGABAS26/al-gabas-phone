@@ -108,53 +108,46 @@ Deno.serve(async (req) => {
     return json({ error: "إعدادات WhatsApp Cloud API أو قالب الصورة المعتمد غير مكتملة." }, 503);
   }
 
-  const deliveryTable = "erp_whatsapp_invoice_deliveries";
-  let deliveryId: string;
-  const { data: existing, error: existingError } = await supabase
-    .from(deliveryTable)
-    .select("id,status")
-    .eq("owner_id", user.id)
-    .eq("invoice_id", invoice.id)
-    .eq("delivery_type", "sale_invoice_image")
-    .maybeSingle();
-  if (existingError) return json({ error: "تعذر قراءة سجل إرسال الفاتورة." }, 503);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceRoleKey) return json({ error: "إعدادات سجل الإرسال على الخادم غير مكتملة." }, 503);
 
-  if (existing) {
-    if (existing.status !== "failed") {
-      return json({ error: "تم بدء إرسال هذه الفاتورة من قبل؛ لن نكرر الإرسال تلقائيًا.", status: existing.status }, 409);
-    }
-    const { data: claimed, error: claimError } = await supabase
-      .from(deliveryTable)
-      .update({ status: "processing", error_code: null, updated_at: new Date().toISOString() })
-      .eq("id", existing.id)
-      .eq("status", "failed")
-      .select("id")
-      .maybeSingle();
-    if (claimError || !claimed) return json({ error: "هناك محاولة إرسال أخرى قيد التنفيذ." }, 409);
-    deliveryId = claimed.id;
-  } else {
-    const { data: created, error: createError } = await supabase
-      .from(deliveryTable)
-      .insert({
-        owner_id: user.id,
-        invoice_id: invoice.id,
-        delivery_type: "sale_invoice_image",
-        status: "processing",
-      })
-      .select("id")
-      .single();
-    if (createError || !created) {
-      return json({ error: createError?.code === "23505" ? "تم طلب إرسال هذه الفاتورة بالفعل." : "تعذر إنشاء سجل إرسال آمن." }, 409);
-    }
-    deliveryId = created.id;
+  const ledger = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: claimRows, error: claimError } = await ledger.rpc("erp_wa_claim_invoice_delivery", {
+    p_owner_id: user.id,
+    p_invoice_id: invoice.id,
+  });
+  if (claimError || !Array.isArray(claimRows) || !claimRows[0]) {
+    return json({ error: "تعذر حجز محاولة إرسال آمنة في السجل." }, 503);
   }
+  const claim = claimRows[0] as { delivery_id: string; delivery_status: string; claimed: boolean };
+  if (!claim.claimed) {
+    return json({
+      error: "تم تسجيل محاولة لهذه الفاتورة من قبل؛ لن نكرر الإرسال تلقائيًا.",
+      status: claim.delivery_status,
+    }, 409);
+  }
+  const deliveryId = claim.delivery_id;
 
-  const mark = async (status: string, extra: Record<string, unknown> = {}) => {
-    await supabase.from(deliveryTable).update({
-      status,
-      updated_at: new Date().toISOString(),
-      ...extra,
-    }).eq("id", deliveryId).eq("owner_id", user.id);
+  const mark = async (
+    status: "accepted" | "delivered" | "read" | "failed" | "unknown",
+    extra: { provider_message_id?: string; error_code?: string | null; accepted_at?: string } = {},
+  ) => {
+    const { data, error } = await ledger.rpc("erp_wa_update_invoice_delivery", {
+      p_delivery_id: deliveryId,
+      p_owner_id: user.id,
+      p_status: status,
+      p_provider_message_id: extra.provider_message_id ?? null,
+      p_error_code: extra.error_code ?? null,
+      p_accepted_at: extra.accepted_at ?? null,
+    });
+    if (error || data !== true) {
+      console.error("WhatsApp delivery ledger update failed", error?.message ?? "no row updated");
+      return false;
+    }
+    return true;
   };
 
   const graphBase = `https://graph.facebook.com/${graphVersion}/`;
