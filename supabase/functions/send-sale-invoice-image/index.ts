@@ -1,3 +1,4 @@
+import { decodePngBase64, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 
 const corsHeaders = {
@@ -12,7 +13,6 @@ const json = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-import { decodePngBase64, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
