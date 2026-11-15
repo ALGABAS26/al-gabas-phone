@@ -157,7 +157,11 @@ async function sendSaleInvoiceImage(id,button,{silent=false}={}){
   const dataUrl=drawSaleInvoicePng(inv,items,settings||{});
   const imageBase64=dataUrl.substring(dataUrl.indexOf(",")+1);
   const {data,error}=await db.functions.invoke("send-sale-invoice-image",{body:{invoice_id:id,image_base64:imageBase64}});
-  if(error)throw error;
+  if(error){
+   let serverMessage="";
+   try{const response=error.context;if(response&&typeof response.clone==="function"){const payload=await response.clone().json();serverMessage=payload?.error||"";}}catch{}
+   throw new Error(serverMessage||error.message||"تعذر الاتصال بخدمة واتساب.");
+  }
   if(!data?.ok)throw new Error(data?.error||"لم يؤكد واتساب إرسال الفاتورة.");
   notice((silent?"تم إرسال صورة الفاتورة تلقائيًا. ":"تم إرسال صورة الفاتورة على واتساب. ")+"رقم الفاتورة: "+inv.invoice_no);
   return true;
