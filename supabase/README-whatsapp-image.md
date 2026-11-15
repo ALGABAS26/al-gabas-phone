@@ -16,10 +16,10 @@ This is an opt-in, disabled-by-default implementation scaffold.
 - `WA_TEMPLATE_LANGUAGE` (for example `ar`)
 - `WA_GRAPH_API_VERSION` (defaults to `v25.0`)
 
-The function uses the Supabase-provided `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEYS` (or legacy `SUPABASE_ANON_KEY`) environment values. It does not require a service-role key.
+The function uses the caller's JWT and the Supabase publishable key to verify the signed-in user and read that user's invoice. It then uses `SUPABASE_SERVICE_ROLE_KEY` only inside the Edge Function to call two narrowly scoped database RPCs that write the private delivery ledger. The service-role key must exist only as a Supabase server secret; never put it in `config.js`, Android assets, GitHub, or chat.
 
-## Required database prerequisite
-Review `supabase/proposals/whatsapp-image-delivery-ledger.sql`. It is deliberately **not a migration** and has not been applied. Generate a real migration with the Supabase CLI after explicit approval; never run the proposal on production without reviewing its effects.
+## Database ledger
+The live project now has `private.erp_whatsapp_invoice_deliveries`, protected by RLS and with all direct access revoked from `anon` and `authenticated`. Two server-only RPCs, `public.erp_wa_claim_invoice_delivery` and `public.erp_wa_update_invoice_delivery`, perform atomic claim/status updates and are executable only by `service_role`. The old `supabase/proposals/whatsapp-image-delivery-ledger.sql` is obsolete and must not be applied.
 
 ## Client auto-send
 `config.js` has `WA_AUTO_SEND_ENABLED=false`. Keep it false until the server secrets, approved image template, delivery-ledger table, and Meta test-number acceptance tests are complete. A manual send control is also available on each completed invoice.
