@@ -1,0 +1,20 @@
+name: WhatsApp validation tests
+
+on:
+  push:
+    branches:
+      - work/ag-system-whatsapp-image-prototype
+  pull_request:
+    paths:
+      - "supabase/functions/**"
+
+jobs:
+  validation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Run WhatsApp validation tests
+        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts
