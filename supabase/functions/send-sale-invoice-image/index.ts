@@ -44,11 +44,18 @@ Deno.serve(async (req) => {
 
   let body: { invoice_id?: string; image_base64?: string };
   try {
-    body = await req.json();
+    const parsed: unknown = await req.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return json({ error: "بيانات الطلب غير صالحة." }, 400);
+    }
+    body = parsed as { invoice_id?: string; image_base64?: string };
   } catch {
     return json({ error: "بيانات الطلب غير صالحة." }, 400);
   }
-  if (!body.invoice_id || !body.image_base64) return json({ error: "بيانات الفاتورة والصورة مطلوبة." }, 400);
+  if (typeof body.invoice_id !== "string" || !body.invoice_id ||
+      typeof body.image_base64 !== "string" || !body.image_base64) {
+    return json({ error: "بيانات الفاتورة والصورة مطلوبة." }, 400);
+  }
 
   let imageBytes: Uint8Array;
   let to: string;
@@ -133,7 +140,7 @@ Deno.serve(async (req) => {
   const mediaForm = new FormData();
   mediaForm.append("messaging_product", "whatsapp");
   mediaForm.append("type", "image/png");
-  mediaForm.append("file", new Blob([imageBytes], { type: "image/png" }), `invoice-${invoice.invoice_no}.png`);
+  mediaForm.append("file", new Blob([imageBytes], { type: "image/png" }), "sale-invoice.png");
 
   let mediaResponse: Response;
   try {
@@ -141,6 +148,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },
       body: mediaForm,
+      signal: AbortSignal.timeout(20_000),
     });
   } catch {
     await mark("failed", { error_code: "MEDIA_UPLOAD_NETWORK_ERROR" });
@@ -194,10 +202,17 @@ Deno.serve(async (req) => {
     return json({ error: "واتساب لم يرجع رقم تأكيد؛ تم إيقاف إعادة الإرسال التلقائي." }, 202);
   }
 
-  await mark("accepted", {
+  const ledgerUpdated = await mark("accepted", {
     provider_message_id: messageId,
     accepted_at: new Date().toISOString(),
     error_code: null,
   });
+  if (!ledgerUpdated) {
+    return json({
+      ok: false,
+      status: "unknown",
+      error: "واتساب قبل الطلب لكن تعذر تحديث سجل المحاولات. لا تعِد الإرسال الآن لتجنب تكرار الفاتورة.",
+    }, 202);
+  }
   return json({ ok: true, status: "accepted", invoice_no: invoice.invoice_no });
 });
