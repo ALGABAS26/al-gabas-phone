@@ -32,3 +32,9 @@ The live project now has `private.erp_whatsapp_invoice_deliveries`, protected by
 
 ## Deployment and test gate
 Do not deploy this function until the Supabase Edge Function secret `SUPABASE_SERVICE_ROLE_KEY` is configured securely and the WhatsApp Cloud API secrets plus approved IMAGE-header template are available. Keep `WA_SEND_ENABLED=false` during deployment and initial smoke checks. A real message test requires explicit owner approval and a designated test recipient. Never paste secrets into chat or commit them to GitHub.
+
+## Local validation tests
+- Pure phone-number and PNG-payload validation helpers are isolated in `supabase/functions/_shared/whatsapp-validation.ts`.
+- Run them with Deno: `deno test supabase/functions/send-sale-invoice-image/validation_test.ts`.
+- GitHub Actions runs this test file on pushes to the work branch and pull requests touching `supabase/functions/**`; it can also be started manually.
+- These are unit tests only. They do not deploy the Edge Function, contact Meta, or send WhatsApp messages.
