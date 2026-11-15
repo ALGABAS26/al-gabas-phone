@@ -1,6 +1,7 @@
 name: WhatsApp validation tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/ag-system-whatsapp-image-prototype
