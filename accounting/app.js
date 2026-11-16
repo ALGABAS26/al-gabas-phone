@@ -303,8 +303,45 @@ $("#purchase-form").onsubmit=async e=>{
  finally{if(btn)btn.disabled=false;}
 };
 
-async function loadMaintenance(){let data;try{data=await fetchAll("erp_maintenance_orders");data.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}catch(error){notice("شغّل ملف accounting/upgrade-02.sql في Supabase أولاً: "+error.message,true);return;}const labels={received:"تم الاستلام",diagnosing:"تحت الفحص",waiting_parts:"في انتظار قطع غيار",in_repair:"تحت الإصلاح",ready:"جاهز للتسليم",delivered:"تم التسليم",cancelled:"ملغي"};$("#maintenance-body").innerHTML=(data||[]).map(x=>"<tr><td>"+esc(x.ticket_no)+"</td><td>"+esc(x.customer_name)+"</td><td>"+esc(x.device_name)+"</td><td>"+esc(x.problem)+"</td><td>"+(labels[x.status]||x.status)+"</td><td>"+new Date(x.received_at).toLocaleDateString("ar-EG")+"</td></tr>").join("")||"<tr><td colspan='6'>لا توجد أجهزة مسجلة.</td></tr>";}
-$("#maintenance-form").onsubmit=async e=>{e.preventDefault();const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:Number($("#m-estimate").value||0),notes:$("#m-notes").value.trim()||null};const {error}=await db.from("erp_maintenance_orders").insert(row);if(error){notice("تعذر حفظ أمر الصيانة: "+error.message,true);return;}notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket);$("#maintenance-form").reset();await loadMaintenance();};
+async function loadMaintenance(){
+ let data;
+ try{data=await fetchAll("erp_maintenance_orders");data.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
+ catch(error){notice("تعذر تحميل الصيانة: "+error.message,true);return;}
+ const labels={received:"تم الاستلام",diagnosing:"تحت الفحص",waiting_parts:"في انتظار قطع غيار",in_repair:"تحت الإصلاح",ready:"جاهز للاستلام",delivered:"تم التسليم",cancelled:"ملغي"};
+ const options=Object.entries(labels).map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("");
+ $("#maintenance-body").innerHTML=(data||[]).map(x=>{
+  const deposit=Number(x.deposit||0),cost=Number(x.estimated_cost||0);
+  return "<tr><td>"+esc(x.ticket_no)+"</td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_phone||"بدون هاتف")+"</small></td><td>"+esc(x.device_name)+"</td><td>"+esc(x.problem)+"</td><td>"+money(cost)+"</td><td>"+money(deposit)+"</td><td>"+money(Math.max(0,cost-deposit))+"</td><td><select class='maintenance-status' data-id='"+esc(x.id)+"' data-current='"+esc(x.status)+"'>"+options+"</select></td><td>"+new Date(x.received_at).toLocaleDateString("ar-EG")+"</td></tr>";
+ }).join("")||"<tr><td colspan='9'>لا توجد أجهزة مسجلة.</td></tr>";
+ $("#maintenance-body").querySelectorAll(".maintenance-status").forEach(select=>{select.value=select.dataset.current;});
+}
+$("#maintenance-body").onchange=async e=>{
+ const select=e.target.closest(".maintenance-status");if(!select)return;
+ const id=select.dataset.id,previous=select.dataset.current,next=select.value;if(previous===next)return;
+ select.disabled=true;
+ try{
+  const update={status:next};if(next==="delivered")update.delivered_at=new Date().toISOString();
+  const {error}=await db.from("erp_maintenance_orders").update(update).eq("id",id).eq("owner_id",session.user.id);
+  if(error)throw error;select.dataset.current=next;
+  if(next==="ready"&&previous!=="ready"){
+   const {data,error:sendError}=await db.functions.invoke("notify-maintenance-ready",{body:{maintenance_order_id:id}});
+   if(sendError)notice("تم تحديث حالة الجهاز، لكن خدمة واتساب لم تؤكد الإشعار بعد.",true);
+   else if(data?.status==="accepted")notice("الجهاز جاهز وواتساب قبل طلب الإشعار.");
+   else notice("تم تحديث الحالة؛ نتيجة إشعار واتساب: "+(data?.status||"غير مؤكدة"),true);
+  }else notice("تم تحديث حالة أمر الصيانة.");
+ }catch(error){notice("تعذر تحديث حالة الصيانة: "+(error.message||error),true);}
+ finally{await loadMaintenance();}
+};
+$("#maintenance-form").onsubmit=async e=>{
+ e.preventDefault();
+ const cost=Number($("#m-estimate").value||0),deposit=Number($("#m-deposit").value||0);
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(deposit)||deposit<0||deposit>cost){notice("العربون يجب أن يكون صفرًا أو أكثر ولا يتجاوز التكلفة المتوقعة.",true);return;}
+ const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);
+ const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:cost,deposit,notes:$("#m-notes").value.trim()||null};
+ const {error}=await db.from("erp_maintenance_orders").insert(row);
+ if(error){notice("تعذر حفظ أمر الصيانة: "+error.message,true);return;}
+ notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket);$("#maintenance-form").reset();await loadMaintenance();
+};
 
 
 async function loadSettings(){
