@@ -1,4 +1,4 @@
-import { decodePngBase64, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { decodePngBase64, fetchWithTimeout, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 
 const corsHeaders = {
@@ -144,12 +144,11 @@ Deno.serve(async (req) => {
 
   let mediaResponse: Response;
   try {
-    mediaResponse = await fetch(`${graphBase}${phoneNumberId}/media`, {
+    mediaResponse = await fetchWithTimeout(`${graphBase}${phoneNumberId}/media`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },
       body: mediaForm,
-      signal: AbortSignal.timeout(20_000),
-    });
+    }, 20_000);
   } catch {
     await mark("failed", { error_code: "MEDIA_UPLOAD_NETWORK_ERROR" });
     return json({ error: "تعذر رفع صورة الفاتورة إلى واتساب. يمكنك المحاولة مرة أخرى." }, 502);
@@ -163,7 +162,7 @@ Deno.serve(async (req) => {
 
   let sendResponse: Response;
   try {
-    sendResponse = await fetch(`${graphBase}${phoneNumberId}/messages`, {
+    sendResponse = await fetchWithTimeout(`${graphBase}${phoneNumberId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -179,7 +178,7 @@ Deno.serve(async (req) => {
           }],
         },
       }),
-    });
+    }, 20_000);
   } catch {
     await mark("unknown", { error_code: "MESSAGE_RESULT_UNKNOWN" });
     return json({ error: "حالة الإرسال غير مؤكدة بسبب انقطاع الاتصال. أوقفنا إعادة الإرسال التلقائي منعًا لتكرار الفاتورة." }, 202);
