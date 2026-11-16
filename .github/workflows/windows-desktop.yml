@@ -1,0 +1,59 @@
+name: Build AG System Windows desktop installers
+
+on:
+  push:
+    branches:
+      - work/ag-system-maintenance-invoice-ready-whatsapp
+    paths:
+      - "accounting/**"
+      - "config.js"
+      - "package.json"
+      - "src-tauri/**"
+      - ".github/workflows/windows-desktop.yml"
+  pull_request:
+    paths:
+      - "accounting/**"
+      - "config.js"
+      - "package.json"
+      - "src-tauri/**"
+      - ".github/workflows/windows-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install JavaScript dependencies
+        run: npm install
+      - name: Check accounting JavaScript
+        run: node --check accounting/app.js
+      - name: Build MSI and NSIS installers
+        run: npm run build:windows
+      - name: Verify installer artifacts
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path src-tauri/target/release/bundle/msi -Filter *.msi -ErrorAction SilentlyContinue
+          $nsis = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe -ErrorAction SilentlyContinue
+          if (-not $msi -or -not $nsis) { throw "Expected both MSI and NSIS installers." }
+          Write-Host "MSI: $($msi.FullName)"
+          Write-Host "NSIS: $($nsis.FullName)"
+      - name: Upload Windows installers (CI artifacts only; no public Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AG-System-Windows-Installers
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
