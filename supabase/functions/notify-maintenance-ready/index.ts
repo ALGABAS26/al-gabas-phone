@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
   const { data: claimRows, error: claimError } = await admin.rpc("erp_wa_claim_maintenance_notification", {
     p_owner_id: auth.user.id,
     p_maintenance_order_id: order.id,
+    p_retry_failed: true,
   });
   if (claimError) return json({ error: "تعذر حجز إشعار آمن في سجل المحاولات." }, 503);
   const claim = Array.isArray(claimRows) ? claimRows[0] : null;
