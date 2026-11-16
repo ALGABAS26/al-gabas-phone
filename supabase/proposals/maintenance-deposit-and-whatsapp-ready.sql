@@ -58,7 +58,7 @@ begin
 end;
 $$;
 revoke all on function public.erp_wa_claim_maintenance_notification(uuid, uuid, boolean) from public, anon, authenticated;
-grant execute on function public.erp_wa_claim_maintenance_notification(uuid, uuid) to service_role;
+grant execute on function public.erp_wa_claim_maintenance_notification(uuid, uuid, boolean) to service_role;
 
 create or replace function public.erp_wa_update_maintenance_notification(
   p_notification_id uuid,
