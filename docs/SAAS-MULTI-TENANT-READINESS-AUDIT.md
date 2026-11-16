@@ -48,3 +48,15 @@ Read-only inspection of the linked Supabase project and the current work branch.
 
 ## Current state
 This is an audit and implementation specification only. No production changes were made. The linked project currently has no Supabase development branches available. A new development branch was quoted at **$0.01344/hour** and requires cost approval before creation.
+
+## Supabase Security Advisor findings (read-only)
+The current Security Advisor also reports:
+- Two SECURITY DEFINER functions executable by `anon`: `erp_my_shop_profile()` and `rls_auto_enable()`.
+- Three SECURITY DEFINER functions executable by `authenticated`: the above plus `is_product_admin()`.
+- Mutable search_path warnings on `erp_check_imei_unique()` and `erp_imei_luhn_valid()`.
+- Leaked-password protection is disabled.
+- Private WhatsApp delivery ledger has RLS enabled and no policies; this is expected only if all direct grants remain revoked and access is exclusively through reviewed server-side RPCs.
+These are audit findings only. Do not revoke grants, alter function security, or change Auth settings on production as part of this work without a reviewed migration and rollback plan.
+
+## Evidence from existing application code
+The client still inserts rows with `owner_id: session.user.id` and often omits `shop_id`; invoice printing reads the shop settings as a single row. The app does not yet use shop_id as its tenant boundary. The new SaaS control plane must therefore be implemented as a coordinated migration, not a quick registration form.
