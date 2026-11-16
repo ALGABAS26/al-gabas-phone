@@ -25,3 +25,15 @@ export function decodePngBase64(value: string): Uint8Array {
   if (!signature.every((byte, i) => bytes[i] === byte)) throw new Error("يجب إرسال صورة PNG صحيحة.");
   return bytes;
 }
+
+
+export async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs = 20_000,
+): Promise<Response> {
+  return await fetch(input, {
+    ...init,
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+}
