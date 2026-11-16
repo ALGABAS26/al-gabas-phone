@@ -74,28 +74,27 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: claim, error: claimError } = await admin
-    .from("erp_whatsapp_maintenance_notifications")
-    .upsert({
-      owner_id: auth.user.id,
-      maintenance_order_id: order.id,
-      status: "processing",
-    }, { onConflict: "owner_id,maintenance_order_id", ignoreDuplicates: true })
-    .select("id")
-    .maybeSingle();
+  const { data: claimRows, error: claimError } = await admin.rpc("erp_wa_claim_maintenance_notification", {
+    p_owner_id: auth.user.id,
+    p_maintenance_order_id: order.id,
+  });
   if (claimError) return json({ error: "تعذر حجز إشعار آمن في سجل المحاولات." }, 503);
-  if (!claim?.id) return json({ status: "duplicate", error: "سبق تسجيل محاولة لهذا الأمر؛ لن نكرر الإرسال تلقائيًا." }, 409);
+  const claim = Array.isArray(claimRows) ? claimRows[0] : null;
+  if (!claim?.claimed || !claim.notification_id) {
+    return json({ status: "duplicate", error: "سبق تسجيل محاولة لهذا الأمر؛ لن نكرر الإرسال تلقائيًا." }, 409);
+  }
 
   const mark = async (status: "accepted" | "failed" | "unknown", code: string | null, messageId: string | null = null) => {
-    const { error } = await admin.from("erp_whatsapp_maintenance_notifications").update({
-      status,
-      error_code: code,
-      provider_message_id: messageId,
-      accepted_at: status === "accepted" ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    }).eq("id", claim.id);
-    if (error) console.error("Maintenance notification ledger update failed", error.message);
-    return !error;
+    const { data, error } = await admin.rpc("erp_wa_update_maintenance_notification", {
+      p_notification_id: claim.notification_id,
+      p_owner_id: auth.user.id,
+      p_status: status,
+      p_provider_message_id: messageId,
+      p_error_code: code,
+      p_accepted_at: status === "accepted" ? new Date().toISOString() : null,
+    });
+    if (error || data !== true) console.error("Maintenance notification ledger update failed", error?.message ?? "no row updated");
+    return !error && data === true;
   };
 
   let response: Response;
