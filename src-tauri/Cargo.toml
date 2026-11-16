@@ -5,10 +5,6 @@ description = "AG System Windows desktop client"
 authors = ["ALGABAS26"]
 edition = "2021"
 
-[lib]
-name = "ag_system_desktop_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
 [build-dependencies]
 tauri-build = "=2.7.2"
 
