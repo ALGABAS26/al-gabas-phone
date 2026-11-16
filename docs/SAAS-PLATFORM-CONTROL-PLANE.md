@@ -21,6 +21,13 @@
 ## Important migration caveat
 The current production database has `shop_id` columns but all inspected ERP business-table policies still use `owner_id = auth.uid()`. Existing application CRUD and posting RPCs also still write by owner_id. Therefore, simply adding a signup screen or setting `erp_shops.status='suspended'` would NOT securely stop an existing shop. A complete multi-tenant migration must update all RLS policies, direct CRUD paths, and posting RPCs together.
 
+## Windows desktop scaffold (in progress)
+- A Tauri 2.12.x desktop wrapper has been added in `src-tauri/`.
+- A cross-platform Node asset-preparation script keeps the shared accounting UI and public Supabase config in the correct relative paths.
+- A Windows GitHub Actions workflow builds MSI and NSIS installers and uploads CI artifacts only; it does not publish a GitHub Release.
+- The first Windows build is running in CI. Installer creation, launch/runtime testing, printing, update strategy, code signing, and live synchronization remain unverified.
+- WebView2 currently uses the small online bootstrapper mode; a fully offline installer would be substantially larger and needs a separate decision.
+
 ## Separate workstreams still pending
 - Test-only SQL migration and RLS policy suite.
 - Meta-approved maintenance-ready and PDF document templates, test-number verification, server-only send.
