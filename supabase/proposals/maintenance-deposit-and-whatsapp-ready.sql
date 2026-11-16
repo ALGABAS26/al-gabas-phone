@@ -25,7 +25,8 @@ grant all on table private.erp_whatsapp_maintenance_notifications to service_rol
 -- The private ledger is accessed only through narrowly scoped service-role RPCs.
 create or replace function public.erp_wa_claim_maintenance_notification(
   p_owner_id uuid,
-  p_maintenance_order_id uuid
+  p_maintenance_order_id uuid,
+  p_retry_failed boolean default false
 )
 returns table(notification_id uuid, claimed boolean)
 language plpgsql
@@ -40,10 +41,23 @@ begin
   on conflict (owner_id, maintenance_order_id) do nothing
   returning id into v_id;
 
+  if v_id is null and p_retry_failed then
+    update private.erp_whatsapp_maintenance_notifications
+    set status = 'processing',
+        provider_message_id = null,
+        error_code = null,
+        accepted_at = null,
+        updated_at = pg_catalog.now()
+    where owner_id = p_owner_id
+      and maintenance_order_id = p_maintenance_order_id
+      and status = 'failed'
+    returning id into v_id;
+  end if;
+
   return query select v_id, v_id is not null;
 end;
 $$;
-revoke all on function public.erp_wa_claim_maintenance_notification(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.erp_wa_claim_maintenance_notification(uuid, uuid, boolean) from public, anon, authenticated;
 grant execute on function public.erp_wa_claim_maintenance_notification(uuid, uuid) to service_role;
 
 create or replace function public.erp_wa_update_maintenance_notification(
