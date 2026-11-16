@@ -38,6 +38,8 @@ jobs:
         run: npm install
       - name: Check accounting JavaScript
         run: node --check accounting/app.js
+      - name: Generate Windows app icons from the existing approved vector asset
+        run: npm run tauri -- icon accounting/app-icon.svg
       - name: Build MSI and NSIS installers
         run: npm run build:windows
       - name: Verify installer artifacts
