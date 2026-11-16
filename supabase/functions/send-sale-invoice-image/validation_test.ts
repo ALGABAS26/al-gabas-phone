@@ -38,7 +38,7 @@ Deno.test("rejects non-PNG and invalid base64 payloads", () => {
 
 Deno.test("fetchWithTimeout passes an abort signal without making a network request", async () => {
   const originalFetch = globalThis.fetch;
-  let receivedSignal: AbortSignal | null = null;
+  let receivedSignal: unknown = null;
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     receivedSignal = init?.signal as AbortSignal;
     return new Response("ok");
