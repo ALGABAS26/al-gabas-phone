@@ -1,4 +1,4 @@
-import { decodePngBase64, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { decodePngBase64, fetchWithTimeout, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 
 function assertEquals<T>(actual: T, expected: T): void {
   if (actual !== expected) throw new Error(`Expected ${String(expected)}, got ${String(actual)}`);
@@ -33,4 +33,45 @@ Deno.test("rejects non-PNG and invalid base64 payloads", () => {
   assertThrows(() => decodePngBase64(btoa("not a png")));
   assertThrows(() => decodePngBase64("%%%"));
   assertThrows(() => decodePngBase64(""));
+});
+
+
+Deno.test("fetchWithTimeout passes an abort signal without making a network request", async () => {
+  const originalFetch = globalThis.fetch;
+  let receivedSignal: AbortSignal | null = null;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    receivedSignal = init?.signal as AbortSignal;
+    return new Response("ok");
+  }) as typeof fetch;
+  try {
+    const response = await fetchWithTimeout("https://example.invalid", {}, 1_000);
+    assertEquals(response.status, 200);
+    assertEquals(receivedSignal instanceof AbortSignal, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("fetchWithTimeout aborts a pending request", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: RequestInfo | URL, init?: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal;
+      if (!signal) {
+        reject(new Error("Missing timeout signal"));
+        return;
+      }
+      signal.addEventListener("abort", () => reject(new DOMException("Timed out", "AbortError")), { once: true });
+    })) as typeof fetch;
+  try {
+    let aborted = false;
+    try {
+      await fetchWithTimeout("https://example.invalid", {}, 10);
+    } catch {
+      aborted = true;
+    }
+    assertEquals(aborted, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
