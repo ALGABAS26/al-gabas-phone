@@ -7,7 +7,7 @@
     "build:android": "mkdir -p www && cp -R accounting/. www/ && cp config.js www/config.js && npx cap sync android",
     "build:desktop": "node scripts/build-desktop.mjs",
     "tauri": "tauri",
-    "build:windows": "tauri build --bundles msi,nsis"
+    "build:windows": "tauri icon accounting/app-icon.svg && tauri build --bundles msi,nsis"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.0",
