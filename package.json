@@ -5,7 +5,7 @@
   "description": "Al Gabas Store accounting app Android wrapper",
   "scripts": {
     "build:android": "mkdir -p www && cp -R accounting/. www/ && cp config.js www/config.js && npx cap sync android",
-    "build:desktop": "rm -rf desktop-dist && mkdir -p desktop-dist/accounting && cp -R accounting/. desktop-dist/accounting/ && cp config.js desktop-dist/config.js && printf '%s\\n' '<!doctype html><html lang=\"ar\" dir=\"rtl\"><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0;url=accounting/\"><title>AG System</title><body>جاري تشغيل AG System...</body></html>' > desktop-dist/index.html",
+    "build:desktop": "node scripts/build-desktop.mjs",
     "tauri": "tauri",
     "build:windows": "tauri build --bundles msi,nsis"
   },
