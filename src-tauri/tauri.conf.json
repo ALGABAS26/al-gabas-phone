@@ -19,7 +19,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' asset: http://tauri.localhost; img-src 'self' asset: http://tauri.localhost data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co wss://*.supabase.co https://graph.facebook.com https://cdn.jsdelivr.net https://unpkg.com; font-src 'self' data: https:; worker-src 'self' blob:; media-src 'self' blob:"
+      "csp": "default-src 'self' asset: http://tauri.localhost; img-src 'self' asset: http://tauri.localhost data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co wss://*.supabase.co https://graph.facebook.com https://cdn.jsdelivr.net https://unpkg.com; font-src 'self' data: https:; worker-src 'self' blob: https:; media-src 'self' blob:"
     }
   },
   "bundle": {
