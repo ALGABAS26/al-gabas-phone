@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - work/ag-system-whatsapp-image-prototype
+      - work/ag-system-maintenance-invoice-ready-whatsapp
   pull_request:
     paths:
       - "supabase/functions/**"
@@ -18,4 +19,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Run WhatsApp validation tests
-        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts
+        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts
