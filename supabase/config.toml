@@ -1,0 +1,4 @@
+project_id = "al-gabas-phone"
+
+[functions.send-sale-invoice-image]
+verify_jwt = true

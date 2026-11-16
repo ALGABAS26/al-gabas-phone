@@ -1,0 +1,6 @@
+-- SUPERSEDED — DO NOT APPLY.
+-- The production ledger was created in the private schema with RLS enabled
+-- and no direct grants to anon/authenticated. Server-only RPCs are used for
+-- atomic claims and status transitions.
+-- See supabase/README-whatsapp-image.md and the migration
+-- create_server_only_whatsapp_delivery_rpcs in the linked Supabase project.
