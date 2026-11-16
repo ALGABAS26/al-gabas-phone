@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AG System",
+  "version": "0.1.0",
+  "identifier": "com.algabas.store",
+  "build": {
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../desktop-dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "AG System",
+        "width": 1280,
+        "height": 850,
+        "minWidth": 980,
+        "minHeight": 680
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' asset: http://tauri.localhost; img-src 'self' asset: http://tauri.localhost data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co wss://*.supabase.co https://graph.facebook.com https://cdn.jsdelivr.net https://unpkg.com; font-src 'self' data: https:; worker-src 'self' blob:; media-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "msi",
+      "nsis"
+    ],
+    "category": "Business",
+    "shortDescription": "AG System shop management and accounting",
+    "longDescription": "AG System desktop application for mobile phone shops, synchronized with the central Supabase service.",
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  }
+}
