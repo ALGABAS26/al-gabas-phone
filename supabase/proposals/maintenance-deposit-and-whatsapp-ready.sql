@@ -29,7 +29,7 @@ create or replace function public.erp_wa_claim_maintenance_notification(
 )
 returns table(notification_id uuid, claimed boolean)
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
@@ -56,7 +56,7 @@ create or replace function public.erp_wa_update_maintenance_notification(
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 begin
