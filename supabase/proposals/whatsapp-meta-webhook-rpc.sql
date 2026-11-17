@@ -1,3 +1,67 @@
+-- Use one delivery slot per owner/invoice across legacy image and new PDF sends.
+-- Apply only after reviewing in an isolated test database.
+create or replace function public.erp_wa_claim_invoice_delivery(
+  p_owner_id uuid,
+  p_invoice_id uuid
+)
+returns table(delivery_id uuid, delivery_status text, claimed boolean)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_id uuid;
+  v_status text;
+begin
+  if p_owner_id is null or p_invoice_id is null then
+    raise exception 'owner_id and invoice_id are required';
+  end if;
+  if not exists (
+    select 1 from public.erp_sales_invoices i
+    where i.id = p_invoice_id and i.owner_id = p_owner_id and i.status = 'completed'
+  ) then
+    raise exception 'invoice is not eligible';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_owner_id::text || ':' || p_invoice_id::text, 0)
+  );
+
+  select d.id, d.status into v_id, v_status
+  from private.erp_whatsapp_invoice_deliveries d
+  where d.owner_id = p_owner_id
+    and d.invoice_id = p_invoice_id
+    and d.delivery_type in ('sale_invoice_image', 'sale_invoice_document')
+  order by d.updated_at desc
+  limit 1
+  for update;
+
+  if v_id is not null then
+    if v_status <> 'failed' then
+      return query select v_id, v_status, false;
+      return;
+    end if;
+    update private.erp_whatsapp_invoice_deliveries d
+    set delivery_type = 'sale_invoice_document',
+        status = 'processing',
+        error_code = null,
+        updated_at = pg_catalog.now()
+    where d.id = v_id
+    returning d.id, d.status into v_id, v_status;
+    return query select v_id, v_status, true;
+    return;
+  end if;
+
+  insert into private.erp_whatsapp_invoice_deliveries(owner_id, invoice_id, delivery_type, status)
+  values (p_owner_id, p_invoice_id, 'sale_invoice_document', 'processing')
+  returning id, status into v_id, v_status;
+
+  return query select v_id, v_status, true;
+end;
+$$;
+revoke all on function public.erp_wa_claim_invoice_delivery(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.erp_wa_claim_invoice_delivery(uuid, uuid) to service_role;
+
 -- PROPOSAL ONLY. Apply to a disposable/test database first.
 -- Enables verified Meta delivery webhooks to update the private invoice ledger.
 -- No direct table access is granted to anon/authenticated.
