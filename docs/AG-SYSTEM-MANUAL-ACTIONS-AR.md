@@ -1,71 +1,79 @@
-# الإجراءات اليدوية المتبقية — AG System
+# AG System — الحالة الحالية والخطوات المتبقية
 
-هذا الدليل يحدد فقط ما يحتاجه مالك المشروع. لا تنفذ SQL المقترح على قاعدة الإنتاج مباشرة.
+آخر مراجعة: 17 نوفمبر 2026.
 
-## 1) قاعدة اختبار منفصلة — قبل أي SQL
-- أنشئ Supabase development branch أو مشروع اختبار منفصل، وتأكد أن بياناته تجريبية فقط.
-- تكلفة فرع التطوير التي ظهرت للمشروع الحالي كانت نحو 0.01344 دولار لكل ساعة تشغيل؛ لا تتركه يعمل دون حاجة.
-- لا تنسخ بيانات عملاء حقيقية إلى بيئة الاختبار.
-- إذا لم تتوفر بيئة اختبار، توقف هنا ولا تطبق ملفات SQL على الإنتاج.
+## ما تم تنفيذه بالفعل
 
-## 2) SQL الصيانة والعربون
-بعد تجهيز قاعدة الاختبار، راجع ثم نفّذ:
-`supabase/proposals/maintenance-deposit-and-whatsapp-ready.sql`
+- قاعدة الإنتاج **AL GABAS PHONE** وقاعدة الاختبار **AL GABAS** تحتويان على مخطط التطبيق وترقيات الصيانة والعربون وسجلات واتساب ودوال RPC اللازمة.
+- اختبارات SQL المقترحة نجحت على PostgreSQL مؤقت داخل CI، كما نُفذت اختبارات سيناريوهات العربون وحالات سجل واتساب على قاعدة الاختبار.
+- نُشرت وظائف Edge Functions التالية على قاعدة الاختبار والإنتاج:
+  - `send-sale-invoice-pdf`
+  - `notify-maintenance-ready`
+  - `whatsapp-meta-webhook`
+- دالتا إرسال التطبيق تتطلبان JWT، والـWebhook يستخدم تحقق Meta الخاص به مع `verify_jwt=false`.
+- تم تشديد صلاحيات `rls_auto_enable()` وإزالة صلاحية التنفيذ المجهول عن `erp_my_shop_profile()`، مع إبقاء صلاحية المستخدم المسجل. كما ثُبّت `search_path` لدالتي IMEI.
+- لم يتم إرسال أي رسالة حقيقية، ولم يتم تفعيل مفاتيح الإرسال. لا تعِد تشغيل ملفات SQL المقترحة على الإنتاج أو الاختبار؛ التغييرات موجودة بالفعل.
+- مفتاحا العميل `WA_CLIENT_SEND_ENABLED` و`WA_AUTO_SEND_ENABLED` ما زالا `false` في `config.js` عمدًا حتى انتهاء اختبار Meta.
+- طلب GitHub رقم 3 ما زال مفتوحًا كمسودة ولم يتم دمجه.
 
-هذا الملف:
-- يضيف عمود العربون إلى أوامر الصيانة.
-- ينشئ سجل إشعارات الصيانة الخاص.
-- ينشئ RPC لتسجيل أمر الصيانة والعربون في الخزنة في معاملة واحدة.
-- ينشئ دوال حجز وتحديث إشعار الصيانة.
+## ما يحتاجه مالك المشروع الآن
 
-## 3) SQL سجل تسليم واتساب
-بعد إنشاء جدول إشعارات الصيانة، راجع ثم نفّذ:
-`supabase/proposals/whatsapp-meta-webhook-rpc.sql`
+### 1) إعداد Meta باستخدام رقم تجريبي فقط
 
-هذا ينشئ RPC محدودًا لتحديث حالات سجل الفاتورة والصيانة من Webhook موثّق. لا يمنح anon أو authenticated صلاحية مباشرة.
+1. افتح Meta for Developers وأنشئ تطبيقًا أو استخدم تطبيقًا تملكه.
+2. أضف منتج WhatsApp واربطه بحساب WhatsApp Business المناسب.
+3. ابدأ برقم Meta التجريبي والمستلم التجريبي. لا تنقل رقم واتساب الحالي ولا تحذف التطبيق الرسمي من الهاتف.
+4. جهّز القيم التالية من لوحة Meta: Phone Number ID وAccess Token وApp Secret.
+5. أنشئ قالب Utility عربي باسم `ag_sale_invoice` ورأسه Document دون متغيرات في جسم الرسالة.
+6. أنشئ قالب Utility عربي باسم `ag_maintenance_ready`، وفي جسمه ثلاثة متغيرات بالترتيب: اسم العميل، اسم الجهاز، رقم التذكرة. انتظر اعتماد القالبين.
 
-## 4) إعداد Meta لاحقًا
-من Meta Developers / WhatsApp Manager:
-- جهّز تطبيق Meta ورقم WhatsApp تجريبيًا.
-- احصل على Phone Number ID وAccess Token وApp Secret.
-- أنشئ قالب فاتورة برأس Document (وليس Image) دون متغيرات في جسم الرسالة، وقالب Utility لإشعار جاهزية الصيانة، ثم انتظر الاعتماد.
-- بعد نشر Webhook، يكون عنوان استدعاء Webhook:
-  `https://<SUPABASE_PROJECT_REF>.supabase.co/functions/v1/whatsapp-meta-webhook`
-- أدخل عنوان Webhook ورمز التحقق الذي تختاره في إعدادات Meta.
+### 2) إعداد Webhook في Meta
 
-## ملاحظة عن PDF الفاتورة
-التطبيق يولّد ملف PDF متعدد الصفحات من رسم الفاتورة العربي ثم يرسله كمستند. محتوى الصفحات صور داخل PDF للحفاظ على تشكيل العربية، لذلك النص غير قابل للتحديد والبحث. لا يحتاج هذا المسار إلى خط خادمي. لا تفعّل الإرسال قبل اختبار حجم الفاتورة على رقم Meta تجريبي.
+عنوان Callback URL للإنتاج:
 
-## 5) أسرار Supabase — من لوحة المشروع فقط
-أدخل الأسرار التالية في إعدادات Edge Functions، ولا ترسلها في المحادثة ولا تضعها في config.js:
-- `WA_SEND_ENABLED=false`
+`https://oplkdaywkvunttnhimwz.supabase.co/functions/v1/whatsapp-meta-webhook`
+
+عنوان Callback URL للاختبار:
+
+`https://thxykjapwovlzxctddcx.supabase.co/functions/v1/whatsapp-meta-webhook`
+
+اختر رمز تحقق عشوائيًا طويلًا بنفسك، واحفظه في مدير كلمات المرور. أدخل عنوان الـCallback ورمز التحقق في Meta، واشترك في حقل `messages`.
+
+### 3) إضافة أسرار Meta في Supabase
+
+ابدأ بمشروع الاختبار **AL GABAS** فقط: Dashboard → Edge Functions → Secrets.
+
+أضف الأسماء التالية، وضع القيم من حساب Meta مباشرة داخل Supabase. لا ترسل القيم السرية في المحادثة:
+
+- `WA_SEND_ENABLED` = `false` في البداية
 - `WA_ACCESS_TOKEN`
 - `WA_PHONE_NUMBER_ID`
-- `WA_DOCUMENT_TEMPLATE_NAME`
-- `WA_MAINTENANCE_READY_TEMPLATE_NAME`
+- `WA_DOCUMENT_TEMPLATE_NAME` = `ag_sale_invoice`
+- `WA_MAINTENANCE_READY_TEMPLATE_NAME` = `ag_maintenance_ready`
 - `WA_META_APP_SECRET`
-- `WA_WEBHOOK_VERIFY_TOKEN`
-- `SUPABASE_SERVICE_ROLE_KEY` (يبقى على الخادم فقط)
+- `WA_WEBHOOK_VERIFY_TOKEN` = رمز التحقق الذي اخترته
+- `WA_TEMPLATE_LANGUAGE` = `ar`
+- `WA_GRAPH_API_VERSION` = `v25.0`
 
-## 6) نشر الدوال بعد نجاح اختبار قاعدة الاختبار فقط
-بعد مراجعة SQL وتجهيز الأسرار، سجّل الدخول إلى Supabase CLI ثم نفّذ على مشروع الاختبار أولًا:
+Supabase يوفّر مفاتيح المشروع الافتراضية للدوال، ومنها `SUPABASE_SERVICE_ROLE_KEY`. لا تضع مفتاح Service Role في التطبيق أو المحادثة أو أي ملف GitHub، ولا تشاركه مع أي شخص.
 
-```sh
-supabase functions deploy send-sale-invoice-pdf --project-ref <PROJECT_REF>
-supabase functions deploy notify-maintenance-ready --project-ref <PROJECT_REF>
-supabase functions deploy whatsapp-meta-webhook --project-ref <PROJECT_REF>
-```
+### 4) الاختبار قبل تفعيل الإنتاج
 
-لا تنشر الدالة القديمة `send-sale-invoice-image`؛ التطبيق يستخدم مسار PDF الجديد. اترك `WA_SEND_ENABLED=false`.
+بعد ضبط أسرار الاختبار، أخبرني أن الإعداد اكتمل دون إرسال أي قيمة سرية. سنراجع تحقق Webhook وسجلات الدوال أولًا. لا نفعّل `WA_SEND_ENABLED=true` على الاختبار إلا عند الاستعداد لاختبار رسالة واحدة إلى مستلم Meta التجريبي وبموافقتك الصريحة.
 
-## 7) ما يجب اختباره قبل أي إرسال حقيقي
-- نجاح وفشل تحدي GET الخاص بـ Meta.
-- رفض توقيع POST غير الصحيح.
-- قبول توقيع صحيح دون تغيير جسم الطلب.
-- تحديث حالات sent/delivered/read/failed دون رجوع الحالة للخلف.
-- إنشاء أمر صيانة بعربون صفر، وبعربون موجب في كل حساب خزنة.
-- التأكد أن فشل تسجيل حركة الخزنة يلغي إنشاء أمر الصيانة كله.
-- اختبار ملكية الفواتير والأوامر ومنع التكرار.
-- إبقاء الإرسال مغلقًا أثناء هذه الاختبارات.
+بعد نجاح اختبار الفاتورة PDF وإشعار الصيانة وحالات delivered/read، نضيف أسرار Meta إلى مشروع الإنتاج مع إبقاء الإرسال مغلقًا حتى الموافقة النهائية.
 
-**لا تفعّل `WA_SEND_ENABLED=true` ولا ترسل لعميل حقيقي إلا بعد مراجعة المالك وموافقته الصريحة على اختبار رقم تجريبي واحد.**
+### 5) تفعيل التطبيق والإرسال التلقائي
+
+بعد نجاح الاختبار فقط، سأحدّث `config.js` إلى:
+- `WA_CLIENT_SEND_ENABLED = true` لتفعيل زر إرسال PDF.
+- `WA_AUTO_SEND_ENABLED = true` لإرسال PDF تلقائيًا بعد حفظ فاتورة البيع.
+
+ثم سأعيد بناء APK/AAB ونسخ Windows. يظل مفتاح الخادم `WA_SEND_ENABLED` هو حاجز الأمان الأخير، ولا نفعّله في الإنتاج إلا بعد مراجعتك.
+
+## ملاحظات مهمة
+
+- PDF الفاتورة متعدد الصفحات، لكنه يستخدم صورًا داخل PDF للحفاظ على تشكيل العربية؛ النص غير قابل للتحديد والبحث.
+- لا يتم ترحيل رقم واتساب الحالي أو العبث بالتطبيق الرسمي على الهاتف.
+- لا يوجد نشر إصدار عام أو دمج PR تلقائيًا.
+- لا تُرسل أي مفاتيح أو Tokens أو App Secret أو Service Role في المحادثة أو GitHub.
