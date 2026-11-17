@@ -54,7 +54,7 @@ create table private.erp_whatsapp_invoice_deliveries (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id),
   invoice_id uuid not null references public.erp_sales_invoices(id),
-  delivery_type text not null,
+  delivery_type text not null check (delivery_type in ('sale_invoice_image')),
   status text not null check (status in ('processing','accepted','delivered','read','failed','unknown')),
   provider_message_id text,
   error_code text,
