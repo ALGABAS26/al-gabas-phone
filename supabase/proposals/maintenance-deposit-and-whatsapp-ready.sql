@@ -126,7 +126,7 @@ begin
      or p_deposit is null or p_deposit < 0 or p_deposit > p_estimated_cost then
     raise exception 'العربون يجب ألا يتجاوز التكلفة المتوقعة';
   end if;
-  if p_payment_account not in ('drawer', 'vodafone_cash', 'instapay') then
+  if p_payment_account is null or p_payment_account not in ('drawer', 'vodafone_cash', 'instapay') then
     raise exception 'حساب استلام العربون غير صالح';
   end if;
 
