@@ -15,7 +15,7 @@ This is a prepared integration, not an active sending service. The Edge Function
 - The Edge Function has not been deployed.
 - Meta app, WhatsApp Business account, phone number ID, access token, and approved template have not been configured.
 - The delivery-ledger SQL/RPC requirements must be reviewed and tested in a separate database before any deployment.
-- No PDF generation or PDF-document message flow is implemented yet; the current prototype is an invoice PNG image.
+- The sale/purchase print view is A4-ready and the system print dialog can save it as a PDF manually. This is not yet a server-generated PDF file or an automatic WhatsApp document attachment; the current WhatsApp prototype still sends a PNG image.
 - No real WhatsApp message has been sent.
 
 ## Server secrets required later
