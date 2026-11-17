@@ -11,7 +11,7 @@ on:
       - "supabase/functions/**"
 
 concurrency:
-  group: ag-system-whatsapp-validation-tests.yml-${{ github.ref }}
+  group: ag-system-whatsapp-validation-tests.yml-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
