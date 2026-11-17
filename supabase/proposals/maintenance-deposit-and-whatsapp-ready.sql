@@ -88,3 +88,74 @@ end;
 $$;
 revoke all on function public.erp_wa_update_maintenance_notification(uuid, uuid, text, text, text, timestamptz) from public, anon, authenticated;
 grant execute on function public.erp_wa_update_maintenance_notification(uuid, uuid, text, text, text, timestamptz) to service_role;
+
+-- Create the repair ticket and post its deposit as one atomic cash movement.
+-- SECURITY INVOKER preserves the caller's RLS policies; no service-role bypass.
+create or replace function public.erp_create_maintenance_order_with_deposit(
+  p_ticket_no text,
+  p_customer_name text,
+  p_customer_phone text,
+  p_device_name text,
+  p_device_color text,
+  p_problem text,
+  p_accessories text,
+  p_estimated_cost numeric,
+  p_deposit numeric,
+  p_notes text,
+  p_payment_account text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_owner uuid := auth.uid();
+  v_order_id uuid;
+begin
+  if v_owner is null then
+    raise exception 'يجب تسجيل الدخول';
+  end if;
+  if p_ticket_no is null or length(trim(p_ticket_no)) = 0
+     or p_customer_name is null or length(trim(p_customer_name)) = 0
+     or p_device_name is null or length(trim(p_device_name)) = 0
+     or p_problem is null or length(trim(p_problem)) = 0 then
+    raise exception 'بيانات أمر الصيانة الأساسية مطلوبة';
+  end if;
+  if p_estimated_cost is null or p_estimated_cost < 0
+     or p_deposit is null or p_deposit < 0 or p_deposit > p_estimated_cost then
+    raise exception 'العربون يجب ألا يتجاوز التكلفة المتوقعة';
+  end if;
+  if p_payment_account not in ('drawer', 'vodafone_cash', 'instapay') then
+    raise exception 'حساب استلام العربون غير صالح';
+  end if;
+
+  perform public.erp_init_cash_accounts();
+
+  insert into public.erp_maintenance_orders (
+    owner_id, ticket_no, customer_name, customer_phone, device_name,
+    device_color, problem, accessories, estimated_cost, deposit, notes
+  ) values (
+    v_owner, trim(p_ticket_no), trim(p_customer_name), nullif(trim(p_customer_phone), ''),
+    trim(p_device_name), nullif(trim(p_device_color), ''), trim(p_problem),
+    nullif(trim(p_accessories), ''), p_estimated_cost, p_deposit, nullif(trim(p_notes), '')
+  )
+  returning id into v_order_id;
+
+  if p_deposit > 0 then
+    insert into public.erp_cash_movements (
+      owner_id, movement_date, direction, amount, description,
+      source_type, source_id, account_code
+    ) values (
+      v_owner, current_date, 'in', p_deposit,
+      'عربون أمر صيانة ' || trim(p_ticket_no),
+      'maintenance_deposit', v_order_id, p_payment_account
+    );
+  end if;
+
+  return v_order_id;
+end;
+$$;
+
+revoke all on function public.erp_create_maintenance_order_with_deposit(text,text,text,text,text,text,text,numeric,numeric,text,text) from public, anon;
+grant execute on function public.erp_create_maintenance_order_with_deposit(text,text,text,text,text,text,text,numeric,numeric,text,text) to authenticated;
