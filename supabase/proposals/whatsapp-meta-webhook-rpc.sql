@@ -35,6 +35,20 @@ begin
     );
 
   v_updated := found;
+
+  update private.erp_whatsapp_maintenance_notifications m
+  set status = p_status,
+      error_code = case when p_status = 'failed' then left(p_error_code, 80) else null end,
+      accepted_at = case when p_status = 'accepted' then coalesce(m.accepted_at, pg_catalog.now()) else m.accepted_at end,
+      updated_at = pg_catalog.now()
+  where m.provider_message_id = p_provider_message_id
+    and (
+      (m.status = 'processing' and p_status in ('accepted', 'delivered', 'read', 'failed'))
+      or (m.status = 'accepted' and p_status in ('delivered', 'read', 'failed'))
+      or (m.status = 'delivered' and p_status = 'read')
+    );
+
+  v_updated := v_updated or found;
   return v_updated;
 end;
 $$;
