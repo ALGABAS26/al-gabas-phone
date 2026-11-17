@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ag-system-windows-desktop.yml-${{ github.ref }}
+  group: ag-system-windows-desktop.yml-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
