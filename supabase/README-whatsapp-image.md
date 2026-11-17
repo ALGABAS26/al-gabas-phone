@@ -1,11 +1,11 @@
-# WhatsApp Cloud API — disabled integration scaffold
+# WhatsApp Cloud API — PDF invoice + maintenance notifications (disabled scaffold)
 
 This integration is prepared in code only. The sending Edge Functions are not deployed and `WA_SEND_ENABLED` must remain unset or `false`.
 
 ## Implemented in code
-- The Android/web client can render a completed sale invoice as a PNG image using invoice rows read under the signed-in user's existing RLS.
-- The sale-invoice Edge Function validates the caller JWT, invoice ownership, completed status, customer phone, and invoice items.
-- Server-side code is prepared to upload the image to WhatsApp Cloud API and send it using an approved IMAGE-header template.
+- The Android/web client renders the completed sale invoice to a multi-page A4 PDF. Arabic text is drawn with the existing browser font stack and placed into JPEG-backed PDF pages, preserving the visual layout; the PDF is viewable/printable but its text is not selectable/searchable.
+- The `send-sale-invoice-pdf` Edge Function validates the caller JWT, invoice ownership, completed status, customer phone, and invoice items, validates the PDF signature/size, uploads it as `application/pdf`, and sends it using an approved DOCUMENT-header template.
+- The previous `send-sale-invoice-image` function remains as a disabled legacy prototype; the app's WhatsApp action now targets the PDF document function.
 - A private delivery ledger interface claims an invoice send and records the provider message ID and status.
 - A strict server-side kill switch permits sending only when `WA_SEND_ENABLED` is exactly `true`.
 - A second client-side kill switch `WA_CLIENT_SEND_ENABLED=false` blocks manual invocation before any Edge Function request. Automatic sending remains disabled through `WA_AUTO_SEND_ENABLED=false`.
@@ -19,14 +19,14 @@ This integration is prepared in code only. The sending Edge Functions are not de
 - The webhook RPC proposal has **not** been applied. It requires both private ledger tables (invoice ledger already exists in the current project; maintenance ledger is created by `maintenance-deposit-and-whatsapp-ready.sql`). Review and test the combined RPC in a separate test database before the webhook can update statuses.
 - The maintenance form now lets the operator choose cash drawer, Vodafone Cash, or InstaPay for a deposit. Its new `erp_create_maintenance_order_with_deposit` RPC creates the repair ticket and posts the deposit as an incoming cash movement in one transaction, preventing a saved ticket with a missing cash entry. This is code-only until `maintenance-deposit-and-whatsapp-ready.sql` is reviewed and applied to a test database.
 - The production database currently has the invoice ledger and claim/update RPCs, but does not have the maintenance-notification ledger or its RPCs. The maintenance SQL remains proposal-only.
-- The sale/purchase print view is A4-ready and the system print dialog can save a PDF manually. This is not server-generated PDF or an automatic WhatsApp document attachment; the current invoice-message prototype still sends PNG.
+- The invoice PDF is generated on the client from the same Arabic invoice canvas; it is an image-backed PDF rather than a text-searchable PDF. Server-side PDF generation remains a possible future enhancement.
 - No real WhatsApp message has been sent.
 
 ## Server secrets required later
 - `WA_SEND_ENABLED=false` during deployment and acceptance checks.
 - `WA_ACCESS_TOKEN`
 - `WA_PHONE_NUMBER_ID`
-- `WA_IMAGE_TEMPLATE_NAME` (approved IMAGE-header template)
+- `WA_DOCUMENT_TEMPLATE_NAME` (approved DOCUMENT-header template)
 - `WA_MAINTENANCE_READY_TEMPLATE_NAME` (approved maintenance Utility template)
 - `WA_TEMPLATE_LANGUAGE=ar`
 - `WA_GRAPH_API_VERSION` (defaults to `v25.0`)
@@ -36,7 +36,7 @@ This integration is prepared in code only. The sending Edge Functions are not de
 
 ## Activation sequence
 1. Configure a Meta test app and test WhatsApp phone number, then obtain its phone number ID, token, and app secret.
-2. Create and approve the image-header invoice template and the maintenance-ready Utility template.
+2. Create and approve the DOCUMENT-header invoice template and the maintenance-ready Utility template.
 3. Review and test `maintenance-deposit-and-whatsapp-ready.sql` and `whatsapp-meta-webhook-rpc.sql` in a disposable database; this also adds the atomic maintenance-ticket + deposit-to-cashbox RPC.
 4. Deploy the functions with sending still disabled. Configure the webhook callback URL and verify token in Meta.
 5. Test signature rejection, valid signatures, unknown message IDs, duplicate status deliveries, and monotonic status transitions without sending to real recipients.
