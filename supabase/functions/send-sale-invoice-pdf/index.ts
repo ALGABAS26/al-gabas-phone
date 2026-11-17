@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
   mediaForm.append("type", "application/pdf");
   const safeInvoiceNo = invoice.invoice_no.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 80) || "invoice";
   const fileName = `sale-invoice-${safeInvoiceNo}.pdf`;
-  mediaForm.append("file", new Blob([pdfBytes], { type: "application/pdf" }), fileName);
+  mediaForm.append("file", new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" }), fileName);
 
   let mediaResponse: Response;
   try {
