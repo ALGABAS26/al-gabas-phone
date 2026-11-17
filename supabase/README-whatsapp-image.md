@@ -1,46 +1,50 @@
-# WhatsApp sale invoice image — disabled integration scaffold
+# WhatsApp Cloud API — disabled integration scaffold
 
-This is a prepared integration, not an active sending service. The Edge Function is not deployed and `WA_SEND_ENABLED` must remain unset or `false`.
+This integration is prepared in code only. The sending Edge Functions are not deployed and `WA_SEND_ENABLED` must remain unset or `false`.
 
-## What is already implemented in code
+## Implemented in code
 - The Android/web client can render a completed sale invoice as a PNG image using invoice rows read under the signed-in user's existing RLS.
-- The Edge Function validates the caller JWT, invoice ownership, completed status, customer phone, and invoice items.
+- The sale-invoice Edge Function validates the caller JWT, invoice ownership, completed status, customer phone, and invoice items.
 - Server-side code is prepared to upload the image to WhatsApp Cloud API and send it using an approved IMAGE-header template.
-- A private delivery ledger interface is used by the function to claim an invoice send and update its status. The matching SQL proposal in this repository is not approved for production and has not been applied as part of this work.
-- A strict server-side kill switch now permits sending only when `WA_SEND_ENABLED` is exactly `true`. Missing, empty, `false`, or any other value disables all outbound WhatsApp requests.
-- A second public client-side kill switch `WA_CLIENT_SEND_ENABLED=false` blocks even manual invocation before any Edge Function request. Both client and server switches must be explicitly enabled after Meta setup.
-- Automatic invoice sending remains disabled in the client through `WA_AUTO_SEND_ENABLED=false`.
+- A private delivery ledger interface claims an invoice send and records the provider message ID and status.
+- A strict server-side kill switch permits sending only when `WA_SEND_ENABLED` is exactly `true`.
+- A second client-side kill switch `WA_CLIENT_SEND_ENABLED=false` blocks manual invocation before any Edge Function request. Automatic sending remains disabled through `WA_AUTO_SEND_ENABLED=false`.
+- A new `whatsapp-meta-webhook` Edge Function handles Meta's GET subscription challenge and verifies POST signatures with HMAC-SHA256 over the exact raw body using `WA_META_APP_SECRET`.
+- The webhook extracts `sent`, `delivered`, `read`, and `failed` status updates and calls a narrowly scoped service-role RPC. The SQL proposal for that RPC is `supabase/proposals/whatsapp-meta-webhook-rpc.sql`.
+- Webhook signature, parsing, and status mapping tests are included in CI.
 
-## What is not active yet
-- The Edge Function has not been deployed.
-- Meta app, WhatsApp Business account, phone number ID, access token, and approved template have not been configured.
-- The delivery-ledger SQL/RPC requirements must be reviewed and tested in a separate database before any deployment.
-- The sale/purchase print view is A4-ready and the system print dialog can save it as a PDF manually. This is not yet a server-generated PDF file or an automatic WhatsApp document attachment; the current WhatsApp prototype still sends a PNG image.
+## Important activation blockers
+- None of the WhatsApp functions have been deployed.
+- Meta app, WhatsApp Business account, phone number ID, access token, app secret, verification token, and approved templates are not configured.
+- The webhook RPC proposal has **not** been applied. It must be reviewed and tested in a separate test database before the webhook can update the private ledger.
+- The production database currently has the invoice ledger and claim/update RPCs, but does not have the maintenance-notification ledger or its RPCs. The maintenance SQL remains proposal-only.
+- The sale/purchase print view is A4-ready and the system print dialog can save a PDF manually. This is not server-generated PDF or an automatic WhatsApp document attachment; the current invoice-message prototype still sends PNG.
 - No real WhatsApp message has been sent.
 
 ## Server secrets required later
 - `WA_SEND_ENABLED=false` during deployment and acceptance checks.
 - `WA_ACCESS_TOKEN`
 - `WA_PHONE_NUMBER_ID`
-- `WA_IMAGE_TEMPLATE_NAME` (approved WhatsApp template with an IMAGE header)
-- `WA_TEMPLATE_LANGUAGE` (for example `ar`)
+- `WA_IMAGE_TEMPLATE_NAME` (approved IMAGE-header template)
+- `WA_MAINTENANCE_READY_TEMPLATE_NAME` (approved maintenance Utility template)
+- `WA_TEMPLATE_LANGUAGE=ar`
 - `WA_GRAPH_API_VERSION` (defaults to `v25.0`)
-- Supabase `SUPABASE_SERVICE_ROLE_KEY` only inside the Edge Function environment, never in `config.js`, Android assets, GitHub, or chat.
+- `WA_META_APP_SECRET` (Meta app secret, server only)
+- `WA_WEBHOOK_VERIFY_TOKEN` (random verification string chosen by the owner)
+- Supabase `SUPABASE_SERVICE_ROLE_KEY` only inside Edge Function secrets, never in client config, Android assets, GitHub, or chat.
 
-The function uses the caller JWT and Supabase publishable key to verify the signed-in user and read that user's invoice. The service-role key is intended only for narrowly scoped server-side ledger RPCs. Never expose it in a public client.
-
-## Later activation sequence
-1. Configure Meta and obtain a test phone number, phone number ID, and token.
-2. Create and approve the IMAGE-header template.
-3. Review the delivery-ledger schema and RPCs in a separate test database.
-4. Deploy the Edge Function with `WA_SEND_ENABLED=false`.
-5. Test authorization, invoice ownership, invalid numbers, duplicate claims, and error paths without contacting real recipients.
+## Activation sequence
+1. Configure a Meta test app and test WhatsApp phone number, then obtain its phone number ID, token, and app secret.
+2. Create and approve the image-header invoice template and the maintenance-ready Utility template.
+3. Review and test `whatsapp-meta-webhook-rpc.sql` and the maintenance ledger/RPC SQL in a disposable database.
+4. Deploy the functions with sending still disabled. Configure the webhook callback URL and verify token in Meta.
+5. Test signature rejection, valid signatures, unknown message IDs, duplicate status deliveries, and monotonic status transitions without sending to real recipients.
 6. With explicit owner approval, enable the server flag and send one message to a designated test recipient.
-7. Keep client auto-send disabled until the single-message test and delivery webhook are verified.
+7. Keep client automatic sending disabled until the single-message test and webhook status updates are verified.
 
 ## Local validation
 Run:
 ```sh
-deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts
+deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
 ```
-The tests cover phone normalization, PNG validation, timeout behavior, template construction, and the disabled-by-default send gate. They do not deploy functions, contact Meta, or send WhatsApp messages.
+These tests do not deploy functions, contact Meta, or send WhatsApp messages.
