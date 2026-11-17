@@ -23,4 +23,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Run WhatsApp validation tests
-        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts
+        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
