@@ -75,3 +75,15 @@ grant select on public.erp_maintenance_orders to service_role;
 grant execute on function public.erp_init_cash_accounts() to authenticated;
 grant usage on schema private to service_role;
 grant all on private.erp_whatsapp_invoice_deliveries to service_role;
+
+alter table public.erp_maintenance_orders enable row level security;
+create policy maintenance_owner_policy on public.erp_maintenance_orders
+  for all to authenticated
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
+
+alter table public.erp_cash_movements enable row level security;
+create policy cash_movement_owner_policy on public.erp_cash_movements
+  for all to authenticated
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
