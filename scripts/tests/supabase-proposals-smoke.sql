@@ -71,6 +71,14 @@ begin
     '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
   );
   if result.claimed is not true then raise exception 'first invoice claim should succeed'; end if;
+  if not exists (
+    select 1 from private.erp_whatsapp_invoice_deliveries
+    where owner_id='11111111-1111-4111-8111-111111111111'
+      and invoice_id='22222222-2222-4222-8222-222222222222'
+      and delivery_type='sale_invoice_document'
+  ) then
+    raise exception 'new invoice claim must create a PDF document delivery row';
+  end if;
   select * into result from public.erp_wa_claim_invoice_delivery(
     '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
   );
