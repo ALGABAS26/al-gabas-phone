@@ -42,7 +42,7 @@ export async function fetchWithTimeout(
 }
 
 export function decodePdfBase64(value: string): Uint8Array {
-  const raw = value.replace(/^data:application\\/pdf;base64,/, "");
+  const raw = value.replace(/^data:application\/pdf;base64,/, "");
   if (!raw || raw.length > 11_000_000) throw new Error("ملف PDF غير صالح أو أكبر من الحد المسموح.");
   let binary: string;
   try {
