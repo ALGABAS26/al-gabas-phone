@@ -1,4 +1,12 @@
 -- Use one delivery slot per owner/invoice across legacy image and new PDF sends.
+-- Production currently has a legacy CHECK allowing image only. Extend it before
+-- the claim RPC can create sale_invoice_document rows.
+alter table private.erp_whatsapp_invoice_deliveries
+  drop constraint if exists erp_whatsapp_invoice_deliveries_delivery_type_check;
+alter table private.erp_whatsapp_invoice_deliveries
+  add constraint erp_whatsapp_invoice_deliveries_delivery_type_check
+  check (delivery_type in ('sale_invoice_image', 'sale_invoice_document'));
+
 -- Apply only after reviewing in an isolated test database.
 create or replace function public.erp_wa_claim_invoice_delivery(
   p_owner_id uuid,
