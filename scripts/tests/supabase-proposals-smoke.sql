@@ -63,12 +63,20 @@ $$;
 
 -- Claiming is idempotent; failed claims can retry without retaining old provider IDs.
 set role service_role;
-select * from public.erp_wa_claim_invoice_delivery(
-  '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
-);
-select * from public.erp_wa_claim_invoice_delivery(
-  '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
-);
+do $
+declare
+  result record;
+begin
+  select * into result from public.erp_wa_claim_invoice_delivery(
+    '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
+  );
+  if result.claimed is not true then raise exception 'first invoice claim should succeed'; end if;
+  select * into result from public.erp_wa_claim_invoice_delivery(
+    '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
+  );
+  if result.claimed is not false then raise exception 'duplicate invoice claim should be rejected'; end if;
+end;
+$;
 reset role;
 
 update private.erp_whatsapp_invoice_deliveries
@@ -76,9 +84,16 @@ set status='failed', provider_message_id='wamid-old', accepted_at=now()
 where invoice_id='22222222-2222-4222-8222-222222222222';
 
 set role service_role;
-select * from public.erp_wa_claim_invoice_delivery(
-  '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
-);
+do $
+declare
+  result record;
+begin
+  select * into result from public.erp_wa_claim_invoice_delivery(
+    '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'
+  );
+  if result.claimed is not true then raise exception 'failed invoice claim should be retryable'; end if;
+end;
+$;
 reset role;
 
 do $$
@@ -99,11 +114,22 @@ where invoice_id='22222222-2222-4222-8222-222222222222';
 
 -- Create and claim a maintenance notification, then update both ledgers through the webhook RPC.
 set role service_role;
-select * from public.erp_wa_claim_maintenance_notification(
-  '11111111-1111-4111-8111-111111111111',
-  (select id from public.erp_maintenance_orders where ticket_no='TEST-DEP-1'),
-  false
-);
+do $
+declare
+  result record;
+  order_id uuid;
+begin
+  select id into order_id from public.erp_maintenance_orders where ticket_no='TEST-DEP-1';
+  select * into result from public.erp_wa_claim_maintenance_notification(
+    '11111111-1111-4111-8111-111111111111', order_id, false
+  );
+  if result.claimed is not true then raise exception 'first maintenance claim should succeed'; end if;
+  select * into result from public.erp_wa_claim_maintenance_notification(
+    '11111111-1111-4111-8111-111111111111', order_id, false
+  );
+  if result.claimed is not false then raise exception 'duplicate maintenance claim should be rejected'; end if;
+end;
+$;
 reset role;
 
 update private.erp_whatsapp_maintenance_notifications
