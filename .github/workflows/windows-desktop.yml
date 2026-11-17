@@ -42,6 +42,8 @@ jobs:
         run: npm install
       - name: Check accounting JavaScript
         run: node --check accounting/app.js
+      - name: Test invoice PDF builder
+        run: node --test scripts/tests/pdf-builder.test.cjs
       - name: Build MSI and NSIS installers
         run: npm run build:windows
       - name: Verify installer artifacts
