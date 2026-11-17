@@ -32,7 +32,7 @@ begin
   where d.owner_id = p_owner_id
     and d.invoice_id = p_invoice_id
     and d.delivery_type in ('sale_invoice_image', 'sale_invoice_document')
-  order by d.updated_at desc
+  order by (d.status <> 'failed') desc, d.updated_at desc
   limit 1
   for update;
 
@@ -43,6 +43,8 @@ begin
     end if;
     update private.erp_whatsapp_invoice_deliveries d
     set status = 'processing',
+        provider_message_id = null,
+        accepted_at = null,
         error_code = null,
         updated_at = pg_catalog.now()
     where d.id = v_id
