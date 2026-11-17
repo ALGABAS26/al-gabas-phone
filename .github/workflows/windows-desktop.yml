@@ -19,6 +19,10 @@ on:
       - ".github/workflows/windows-desktop.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ag-system-windows-desktop.yml-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
