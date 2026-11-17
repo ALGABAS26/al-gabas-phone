@@ -8,6 +8,7 @@ This is a prepared integration, not an active sending service. The Edge Function
 - Server-side code is prepared to upload the image to WhatsApp Cloud API and send it using an approved IMAGE-header template.
 - A private delivery ledger interface is used by the function to claim an invoice send and update its status. The matching SQL proposal in this repository is not approved for production and has not been applied as part of this work.
 - A strict server-side kill switch now permits sending only when `WA_SEND_ENABLED` is exactly `true`. Missing, empty, `false`, or any other value disables all outbound WhatsApp requests.
+- A second public client-side kill switch `WA_CLIENT_SEND_ENABLED=false` blocks even manual invocation before any Edge Function request. Both client and server switches must be explicitly enabled after Meta setup.
 - Automatic invoice sending remains disabled in the client through `WA_AUTO_SEND_ENABLED=false`.
 
 ## What is not active yet
