@@ -145,6 +145,7 @@ function drawSaleInvoicePng(inv,items,settings){
  return canvas.toDataURL("image/png");
 }
 async function sendSaleInvoiceImage(id,button,{silent=false}={}){
+ if(window.WA_CLIENT_SEND_ENABLED!==true){if(!silent)notice("إرسال واتساب غير مفعّل حاليًا. هنفعّله بعد ضبط Meta واختبار الرقم والقالب.",false);return false;}
  if(button)button.disabled=true;
  try{
   const [{data:inv,error:ie},{data:items,error:ite},{data:settings,error:se}]=await Promise.all([
@@ -188,7 +189,7 @@ $("#sale-form").onsubmit=async e=>{
  const payments=[["drawer","sale-pay-drawer"],["vodafone_cash","sale-pay-vodafone"],["instapay","sale-pay-instapay"]].map(([account_code,id])=>({account_code,amount:Number($("#"+id).value||0)}));
  const args={p_invoice_no:$("#sale-no").value.trim(),p_invoice_date:$("#sale-date").value,p_customer_name:$("#sale-customer").value.trim()||"عميل نقدي",p_customer_phone:$("#sale-phone").value.trim()||null,p_discount:Number($("#sale-discount").value||0),p_notes:$("#sale-notes").value.trim()||null,p_items:items,p_payments:payments};
  const btn=e.submitter;if(btn)btn.disabled=true;
- try{const {data:invoiceId,error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();if(window.WA_AUTO_SEND_ENABLED===true&&args.p_customer_phone&&invoiceId){await sendSaleInvoiceImage(invoiceId,null,{silent:true});}}
+ try{const {data:invoiceId,error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();if(window.WA_AUTO_SEND_ENABLED===true&&window.WA_CLIENT_SEND_ENABLED===true&&args.p_customer_phone&&invoiceId){await sendSaleInvoiceImage(invoiceId,null,{silent:true});}}
  catch(err){notice("لم يتم حفظ الفاتورة: "+(err.message||err),true);}
  finally{if(btn)btn.disabled=false;}
 };
