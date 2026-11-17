@@ -17,6 +17,7 @@ This integration is prepared in code only. The sending Edge Functions are not de
 - None of the WhatsApp functions have been deployed.
 - Meta app, WhatsApp Business account, phone number ID, access token, app secret, verification token, and approved templates are not configured.
 - The webhook RPC proposal has **not** been applied. It requires both private ledger tables (invoice ledger already exists in the current project; maintenance ledger is created by `maintenance-deposit-and-whatsapp-ready.sql`). Review and test the combined RPC in a separate test database before the webhook can update statuses.
+- The maintenance form now lets the operator choose cash drawer, Vodafone Cash, or InstaPay for a deposit. Its new `erp_create_maintenance_order_with_deposit` RPC creates the repair ticket and posts the deposit as an incoming cash movement in one transaction, preventing a saved ticket with a missing cash entry. This is code-only until `maintenance-deposit-and-whatsapp-ready.sql` is reviewed and applied to a test database.
 - The production database currently has the invoice ledger and claim/update RPCs, but does not have the maintenance-notification ledger or its RPCs. The maintenance SQL remains proposal-only.
 - The sale/purchase print view is A4-ready and the system print dialog can save a PDF manually. This is not server-generated PDF or an automatic WhatsApp document attachment; the current invoice-message prototype still sends PNG.
 - No real WhatsApp message has been sent.
