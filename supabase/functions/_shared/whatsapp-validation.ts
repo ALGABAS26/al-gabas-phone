@@ -40,3 +40,23 @@ export async function fetchWithTimeout(
     signal: AbortSignal.timeout(timeoutMs),
   });
 }
+
+export function decodePdfBase64(value: string): Uint8Array {
+  const raw = value.replace(/^data:application\\/pdf;base64,/, "");
+  if (!raw || raw.length > 11_000_000) throw new Error("ملف PDF غير صالح أو أكبر من الحد المسموح.");
+  let binary: string;
+  try {
+    binary = atob(raw);
+  } catch {
+    throw new Error("ترميز ملف PDF غير صالح.");
+  }
+  if (binary.length > 8 * 1024 * 1024) throw new Error("حجم ملف PDF يجب ألا يتجاوز 8 ميجابايت.");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const header = new TextDecoder().decode(bytes.slice(0, 5));
+  const tail = new TextDecoder().decode(bytes.slice(Math.max(0, bytes.length - 1024)));
+  if (header !== "%PDF-" || !tail.includes("%%EOF")) {
+    throw new Error("يجب إرسال ملف PDF صحيح.");
+  }
+  return bytes;
+}
