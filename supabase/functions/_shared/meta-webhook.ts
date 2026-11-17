@@ -16,7 +16,9 @@ export async function verifyMetaSignature(
     false,
     ["verify"],
   );
-  return await crypto.subtle.verify("HMAC", key, signature, rawBody);
+  const signatureBuffer = signature.buffer as ArrayBuffer;
+  const bodyBuffer = new Uint8Array(rawBody).buffer as ArrayBuffer;
+  return await crypto.subtle.verify("HMAC", key, signatureBuffer, bodyBuffer);
 }
 
 export function mapMetaStatus(value: unknown): WhatsAppDeliveryStatus | null {
