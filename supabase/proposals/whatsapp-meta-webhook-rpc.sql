@@ -42,8 +42,7 @@ begin
       return;
     end if;
     update private.erp_whatsapp_invoice_deliveries d
-    set delivery_type = 'sale_invoice_document',
-        status = 'processing',
+    set status = 'processing',
         error_code = null,
         updated_at = pg_catalog.now()
     where d.id = v_id
