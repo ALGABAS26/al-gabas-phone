@@ -22,5 +22,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Type-check WhatsApp Edge Functions
+        run: deno check supabase/functions/send-sale-invoice-image/index.ts supabase/functions/notify-maintenance-ready/index.ts supabase/functions/whatsapp-meta-webhook/index.ts
       - name: Run WhatsApp validation tests
         run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
