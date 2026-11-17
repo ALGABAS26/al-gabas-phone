@@ -1,5 +1,5 @@
 import { buildMaintenanceReadyTemplate } from "../_shared/maintenance-ready.ts";
-import { normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { isWhatsAppSendEnabled, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 
 Deno.test("builds the approved maintenance-ready template parameters", () => {
   const template = buildMaintenanceReadyTemplate("maintenance_ready", "ar", "أحمد", "iPhone 13", "REP-20261117-12345");
@@ -18,4 +18,11 @@ Deno.test("rejects missing maintenance-ready template fields", () => {
 
 Deno.test("uses the existing Egyptian phone validation", () => {
   if (normalizeEgyptPhone("01012345678") !== "201012345678") throw new Error("Phone normalization failed");
+});
+
+
+Deno.test("maintenance notification is disabled by default", () => {
+  if (isWhatsAppSendEnabled(undefined)) throw new Error("Unset server flag must never send");
+  if (isWhatsAppSendEnabled("false")) throw new Error("False server flag must never send");
+  if (!isWhatsAppSendEnabled("true")) throw new Error("Explicit true is required to enable sending");
 });
