@@ -10,6 +10,10 @@ on:
     paths:
       - "supabase/functions/**"
 
+concurrency:
+  group: ag-system-whatsapp-validation-tests.yml-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validation-tests:
     runs-on: ubuntu-latest
