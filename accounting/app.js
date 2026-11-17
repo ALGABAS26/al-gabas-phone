@@ -340,20 +340,30 @@ $("#maintenance-form").onsubmit=async e=>{
  if(!Number.isFinite(cost)||cost<0||!Number.isFinite(deposit)||deposit<0||deposit>cost){notice("العربون يجب أن يكون صفرًا أو أكثر ولا يتجاوز التكلفة المتوقعة.",true);return;}
  const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);
  const paymentAccount=$("#m-payment-account").value;
+ const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:cost,notes:$("#m-notes").value.trim()||null};
  const {data:orderId,error}=await db.rpc("erp_create_maintenance_order_with_deposit",{
   p_ticket_no:ticket,
-  p_customer_name:$("#m-customer").value.trim(),
-  p_customer_phone:$("#m-phone").value.trim()||null,
-  p_device_name:$("#m-device").value.trim(),
-  p_device_color:$("#m-color").value.trim()||null,
-  p_problem:$("#m-problem").value.trim(),
-  p_accessories:$("#m-accessories").value.trim()||null,
+  p_customer_name:row.customer_name,
+  p_customer_phone:row.customer_phone,
+  p_device_name:row.device_name,
+  p_device_color:row.device_color,
+  p_problem:row.problem,
+  p_accessories:row.accessories,
   p_estimated_cost:cost,
   p_deposit:deposit,
-  p_notes:$("#m-notes").value.trim()||null,
+  p_notes:row.notes,
   p_payment_account:paymentAccount
  });
- if(error){notice("تعذر حفظ أمر الصيانة. تأكد من تطبيق تحديث الصيانة والخزنة في قاعدة الاختبار أولاً: "+error.message,true);return;}
+ if(error){
+  const missingRpc=["PGRST202","42883"].includes(error.code)||/could not find the function|function .* does not exist/i.test(error.message||"");
+  if(deposit===0&&missingRpc){
+   const {error:legacyError}=await db.from("erp_maintenance_orders").insert(row);
+   if(legacyError){notice("تعذر حفظ أمر الصيانة: "+legacyError.message,true);return;}
+   notice("تم حفظ أمر الصيانة بدون عربون. لتفعيل تسجيل العربون في الخزنة، يلزم تنفيذ تحديث قاعدة البيانات أولاً.");
+   $("#maintenance-form").reset();await loadMaintenance();return;
+  }
+  notice("تعذر حفظ أمر الصيانة. لا تقبل عربونًا قبل تطبيق تحديث الصيانة والخزنة في قاعدة الاختبار: "+error.message,true);return;
+ }
  notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket+(deposit>0?" وتسجيل العربون في الخزنة.":"."));$("#maintenance-form").reset();await loadMaintenance();if(deposit>0)await loadCashbox();
 };
 
