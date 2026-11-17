@@ -186,7 +186,7 @@
  ];
  function loadConfigAndApp(){
   const c=document.createElement("script");c.src="../config.js";
-  c.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261113-whatsapp-image";document.body.appendChild(a);};
+  c.onload=function(){const p=document.createElement("script");p.src="pdf-builder.js?v=20261117";p.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261117-pdf";document.body.appendChild(a);};p.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل أداة إنشاء PDF.";};document.body.appendChild(p);};
   c.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل ملف إعدادات الاتصال config.js.";};
   document.body.appendChild(c);
  }
