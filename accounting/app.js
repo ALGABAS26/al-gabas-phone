@@ -144,59 +144,6 @@ function drawSaleInvoiceCanvas(inv,items,settings){
  text(settings.invoice_note||"شكرًا لتعاملكم معنا",width/2,height-76,24,"#64748b","center","normal",width-2*pad);
  return canvas;
 }
-function pdfAscii(value){return new TextEncoder().encode(value);}
-function pdfJoin(parts){
- const size=parts.reduce((n,p)=>n+p.length,0),out=new Uint8Array(size);let offset=0;
- for(const part of parts){out.set(part,offset);offset+=part.length;}
- return out;
-}
-function pdfDataUrlBytes(dataUrl){
- const encoded=dataUrl.slice(dataUrl.indexOf(",")+1),binary=atob(encoded),bytes=new Uint8Array(binary.length);
- for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
- return bytes;
-}
-function buildInvoicePdf(canvas){
- const pageWidth=595.28,pageHeight=841.89,margin=28,contentWidth=pageWidth-margin*2,contentHeight=pageHeight-margin*2;
- const sourcePageHeight=Math.max(1,Math.floor(canvas.width*contentHeight/contentWidth));
- const pages=[];
- for(let y=0;y<canvas.height;y+=sourcePageHeight){
-  const height=Math.min(sourcePageHeight,canvas.height-y),pageCanvas=document.createElement("canvas");
-  pageCanvas.width=canvas.width;pageCanvas.height=height;
-  pageCanvas.getContext("2d").drawImage(canvas,0,y,canvas.width,height,0,0,canvas.width,height);
-  pages.push({width:canvas.width,height,jpeg:pdfDataUrlBytes(pageCanvas.toDataURL("image/jpeg",0.9))});
- }
- const objectCount=3+pages.length*3,objects=new Array(objectCount);
- objects[1]=pdfAscii("<< /Type /Catalog /Pages 2 0 R >>");
- const kids=pages.map((_,i)=>`${3+i*3} 0 R`).join(" ");
- objects[2]=pdfAscii(`<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`);
- pages.forEach((page,i)=>{
-  const pageId=3+i*3,contentId=pageId+1,imageId=pageId+2;
-  const drawHeight=contentWidth*page.height/page.width;
-  const content=pdfAscii(`q\n${contentWidth} 0 0 ${drawHeight} ${margin} ${pageHeight-margin-drawHeight} cm\n/Im0 Do\nQ`);
-  objects[pageId]=pdfAscii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`);
-  objects[contentId]=pdfJoin([pdfAscii(`<< /Length ${content.length} >>\nstream\n`),content,pdfAscii("\nendstream")]);
-  objects[imageId]=pdfJoin([
-   pdfAscii(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpeg.length} >>\nstream\n`),
-   page.jpeg,pdfAscii("\nendstream")
-  ]);
- });
- const parts=[pdfAscii("%PDF-1.4\n%AGINVOICE\n")],offsets=new Array(objectCount).fill(0);let position=parts[0].length;
- for(let id=1;id<objectCount;id++){
-  const head=pdfAscii(`${id} 0 obj\n`),tail=pdfAscii("\nendobj\n");
-  offsets[id]=position;parts.push(head,objects[id],tail);position+=head.length+objects[id].length+tail.length;
- }
- const xrefOffset=position,xref=[`xref\n0 ${objectCount}\n`,"0000000000 65535 f \n"];
- for(let id=1;id<objectCount;id++)xref.push(`${String(offsets[id]).padStart(10,"0")} 00000 n \n`);
- const xrefBytes=pdfAscii(xref.join(""));
- const trailer=pdfAscii(`trailer\n<< /Size ${objectCount} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
- parts.push(xrefBytes,trailer);
- return new Blob(parts,{type:"application/pdf"});
-}
-async function pdfBlobBase64(blob){
- const bytes=new Uint8Array(await blob.arrayBuffer());let binary="";
- for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
- return btoa(binary);
-}
 async function sendSaleInvoicePdf(id,button,{silent=false}={}){
  if(window.WA_CLIENT_SEND_ENABLED!==true){if(!silent)notice("إرسال واتساب غير مفعّل حاليًا. هنفعّله بعد ضبط Meta واختبار الرقم والقالب.",false);return false;}
  if(button)button.disabled=true;
@@ -211,8 +158,8 @@ async function sendSaleInvoicePdf(id,button,{silent=false}={}){
   if(!inv.customer_phone)throw new Error("لا يوجد رقم هاتف محفوظ للعميل في الفاتورة.");
   if(!items||!items.length)throw new Error("لا توجد أصناف في الفاتورة.");
   const invoiceCanvas=drawSaleInvoiceCanvas(inv,items,settings||{});
-  const pdfBlob=buildInvoicePdf(invoiceCanvas);
-  const pdfBase64=await pdfBlobBase64(pdfBlob);
+  const pdfBlob=window.AGInvoicePdf.buildInvoicePdf(invoiceCanvas);
+  const pdfBase64=await window.AGInvoicePdf.blobToBase64(pdfBlob);
   const {data,error}=await db.functions.invoke("send-sale-invoice-pdf",{body:{invoice_id:id,pdf_base64:pdfBase64}});
   if(error){
    let serverMessage="";
