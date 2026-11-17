@@ -325,7 +325,7 @@ $("#maintenance-body").onchange=async e=>{
   if(error)throw error;select.dataset.current=next;
   if(next==="ready"&&previous!=="ready"){
    const {data,error:sendError}=await db.functions.invoke("notify-maintenance-ready",{body:{maintenance_order_id:id}});
-   if(sendError)notice("تم تحديث حالة الجهاز، لكن خدمة واتساب لم تؤكد الإشعار بعد.",true);
+   if(sendError)notice("تم تحديث الحالة إلى جاهز. إشعار واتساب غير مفعّل حاليًا؛ هنفعّله بعد إعداد Meta.",false);
    else if(data?.status==="accepted")notice("الجهاز جاهز وواتساب قبل طلب الإشعار.");
    else notice("تم تحديث الحالة؛ نتيجة إشعار واتساب: "+(data?.status||"غير مؤكدة"),true);
   }else notice("تم تحديث حالة أمر الصيانة.");
