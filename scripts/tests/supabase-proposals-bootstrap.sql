@@ -1,7 +1,7 @@
 -- Synthetic minimal Supabase-like schema for proposal smoke tests only.
 create role anon nologin;
 create role authenticated nologin;
-create role service_role nologin;
+create role service_role nologin bypassrls;
 
 create schema auth;
 create schema private;
