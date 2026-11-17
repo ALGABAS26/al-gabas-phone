@@ -63,7 +63,7 @@ $$;
 
 -- Claiming is idempotent; failed claims can retry without retaining old provider IDs.
 set role service_role;
-do $
+do $$
 declare
   result record;
 begin
@@ -76,7 +76,7 @@ begin
   );
   if result.claimed is not false then raise exception 'duplicate invoice claim should be rejected'; end if;
 end;
-$;
+$$;
 reset role;
 
 update private.erp_whatsapp_invoice_deliveries
@@ -84,7 +84,7 @@ set status='failed', provider_message_id='wamid-old', accepted_at=now()
 where invoice_id='22222222-2222-4222-8222-222222222222';
 
 set role service_role;
-do $
+do $$
 declare
   result record;
 begin
@@ -93,7 +93,7 @@ begin
   );
   if result.claimed is not true then raise exception 'failed invoice claim should be retryable'; end if;
 end;
-$;
+$$;
 reset role;
 
 do $$
@@ -114,7 +114,7 @@ where invoice_id='22222222-2222-4222-8222-222222222222';
 
 -- Create and claim a maintenance notification, then update both ledgers through the webhook RPC.
 set role service_role;
-do $
+do $$
 declare
   result record;
   order_id uuid;
@@ -129,7 +129,7 @@ begin
   );
   if result.claimed is not false then raise exception 'duplicate maintenance claim should be rejected'; end if;
 end;
-$;
+$$;
 reset role;
 
 update private.erp_whatsapp_maintenance_notifications
