@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { buildMaintenanceReadyTemplate } from "../_shared/maintenance-ready.ts";
-import { fetchWithTimeout, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { fetchWithTimeout, isWhatsAppSendEnabled, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +13,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (Deno.env.get("WA_SEND_ENABLED") !== "true") return json({ error: "إرسال واتساب غير مفعّل على الخادم." }, 503);
+  if (!isWhatsAppSendEnabled(Deno.env.get("WA_SEND_ENABLED"))) return json({ error: "إرسال واتساب غير مفعّل على الخادم." }, 503);
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "يلزم تسجيل الدخول." }, 401);
