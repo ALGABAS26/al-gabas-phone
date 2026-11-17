@@ -24,6 +24,6 @@ jobs:
           deno-version: v2.x
       - name: Type-check WhatsApp Edge Functions
         working-directory: supabase/functions
-        run: deno check --node-modules-dir=auto send-sale-invoice-image/index.ts notify-maintenance-ready/index.ts whatsapp-meta-webhook/index.ts
+        run: deno check --node-modules-dir=auto send-sale-invoice-image/index.ts send-sale-invoice-pdf/index.ts notify-maintenance-ready/index.ts whatsapp-meta-webhook/index.ts
       - name: Run WhatsApp validation tests
-        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
+        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/send-sale-invoice-pdf/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
