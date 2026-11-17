@@ -338,10 +338,22 @@ $("#maintenance-form").onsubmit=async e=>{
  const cost=Number($("#m-estimate").value||0),deposit=Number($("#m-deposit").value||0);
  if(!Number.isFinite(cost)||cost<0||!Number.isFinite(deposit)||deposit<0||deposit>cost){notice("العربون يجب أن يكون صفرًا أو أكثر ولا يتجاوز التكلفة المتوقعة.",true);return;}
  const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);
- const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:cost,deposit,notes:$("#m-notes").value.trim()||null};
- const {error}=await db.from("erp_maintenance_orders").insert(row);
- if(error){notice("تعذر حفظ أمر الصيانة: "+error.message,true);return;}
- notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket);$("#maintenance-form").reset();await loadMaintenance();
+ const paymentAccount=$("#m-payment-account").value;
+ const {data:orderId,error}=await db.rpc("erp_create_maintenance_order_with_deposit",{
+  p_ticket_no:ticket,
+  p_customer_name:$("#m-customer").value.trim(),
+  p_customer_phone:$("#m-phone").value.trim()||null,
+  p_device_name:$("#m-device").value.trim(),
+  p_device_color:$("#m-color").value.trim()||null,
+  p_problem:$("#m-problem").value.trim(),
+  p_accessories:$("#m-accessories").value.trim()||null,
+  p_estimated_cost:cost,
+  p_deposit:deposit,
+  p_notes:$("#m-notes").value.trim()||null,
+  p_payment_account:paymentAccount
+ });
+ if(error){notice("تعذر حفظ أمر الصيانة. تأكد من تطبيق تحديث الصيانة والخزنة في قاعدة الاختبار أولاً: "+error.message,true);return;}
+ notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket+(deposit>0?" وتسجيل العربون في الخزنة.":"."));$("#maintenance-form").reset();await loadMaintenance();if(deposit>0)await loadCashbox();
 };
 
 
