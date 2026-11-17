@@ -2,3 +2,13 @@ project_id = "al-gabas-phone"
 
 [functions.send-sale-invoice-image]
 verify_jwt = true
+
+[functions.notify-maintenance-ready]
+verify_jwt = true
+
+# Meta signs webhook requests with the app secret; the function verifies the signature itself.
+[functions.whatsapp-meta-webhook]
+verify_jwt = false
+
+[functions.send-sale-invoice-pdf]
+verify_jwt = true

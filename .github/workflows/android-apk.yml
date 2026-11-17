@@ -1,5 +1,9 @@
 name: Build AG system Android app
 
+concurrency:
+  group: ag-system-android-apk.yml-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -33,6 +37,10 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+      - name: Check application JavaScript syntax
+        run: node --check accounting/app.js
+      - name: Test invoice PDF builder
+        run: node --test scripts/tests/pdf-builder.test.cjs
 
       - name: Add Android platform and generate branded icons
         run: |
@@ -186,6 +194,7 @@ jobs:
           retention-days: 30
 
       - name: Publish public GitHub Release downloads
+        if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ag-system-${{ github.run_number }}

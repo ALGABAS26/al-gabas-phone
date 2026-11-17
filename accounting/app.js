@@ -93,9 +93,9 @@ function saleCalc(){
  $("#sale-total").textContent=money(total);$("#sale-paid").textContent=money(paid);$("#sale-remaining").textContent="المتبقي: "+money(Math.max(0,total-paid));
 }
 
-function drawSaleInvoicePng(inv,items,settings){
+function drawSaleInvoiceCanvas(inv,items,settings){
  const width=1200,pad=64,rowHeight=76,headerHeight=230,tableTop=headerHeight+40;
- const height=tableTop+92+items.length*rowHeight+330;
+ const height=tableTop+174+items.length*rowHeight+330;
  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
  const ctx=canvas.getContext("2d");
  ctx.fillStyle="#eef2f7";ctx.fillRect(0,0,width,height);
@@ -110,11 +110,13 @@ function drawSaleInvoicePng(inv,items,settings){
  text(settings.shop_name_en||"AL GABAS PHONE",width-pad,148,23,"#dbeafe","right","normal",width-2*pad);
  text([settings.phone,settings.address].filter(Boolean).join(" • "),width-pad,190,21,"#e5edf7","right","normal",width-2*pad);
  text("فاتورة بيع",width-pad,headerHeight+40,36,"#123b68","right","bold");
+ const createdAt=inv.created_at?new Date(inv.created_at):new Date((inv.invoice_date||"")+"T00:00:00");
+ const invoiceDate=(inv.invoice_date?new Date(inv.invoice_date+"T00:00:00"):createdAt).toLocaleDateString("ar-EG"),invoiceTime=createdAt.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
  text("رقم الفاتورة: "+inv.invoice_no,width-pad,tableTop+22,25,"#253247","right","bold");
- text("التاريخ: "+inv.invoice_date,pad,tableTop+22,23,"#475569","left");
- text("العميل: "+(inv.customer_name||"عميل نقدي"),width-pad,tableTop+62,23,"#475569","right");
- text("الهاتف: "+(inv.customer_phone||"—"),pad,tableTop+62,22,"#475569","left");
- const y0=tableTop+96;
+ text("التاريخ: "+invoiceDate+" — الساعة: "+invoiceTime,width-pad,tableTop+62,23,"#475569","right");
+ text("العميل: "+(inv.customer_name||"عميل نقدي"),width-pad,tableTop+108,23,"#475569","right");
+ text("الهاتف: "+(inv.customer_phone||"—"),pad,tableTop+108,22,"#475569","left");
+ const y0=tableTop+174;
  ctx.fillStyle="#e8eef6";ctx.fillRect(pad,y0,width-2*pad,64);
  text("الصنف",width-pad-20,y0+42,23,"#123b68","right","bold",440);
  text("الكمية",760,y0+42,22,"#123b68","center","bold",130);
@@ -140,9 +142,10 @@ function drawSaleInvoicePng(inv,items,settings){
  text("المدفوع: "+money(inv.paid),width-pad,sumY+196,22,"#475569","right");
  text("المتبقي: "+money(inv.remaining),pad+220,sumY+196,22,"#475569","left");
  text(settings.invoice_note||"شكرًا لتعاملكم معنا",width/2,height-76,24,"#64748b","center","normal",width-2*pad);
- return canvas.toDataURL("image/png");
+ return canvas;
 }
-async function sendSaleInvoiceImage(id,button,{silent=false}={}){
+async function sendSaleInvoicePdf(id,button,{silent=false}={}){
+ if(window.WA_CLIENT_SEND_ENABLED!==true){if(!silent)notice("إرسال واتساب غير مفعّل حاليًا. هنفعّله بعد ضبط Meta واختبار الرقم والقالب.",false);return false;}
  if(button)button.disabled=true;
  try{
   const [{data:inv,error:ie},{data:items,error:ite},{data:settings,error:se}]=await Promise.all([
@@ -154,25 +157,26 @@ async function sendSaleInvoiceImage(id,button,{silent=false}={}){
   if(!inv||inv.status!=="completed")throw new Error("لا يمكن إرسال فاتورة غير مكتملة أو ملغاة.");
   if(!inv.customer_phone)throw new Error("لا يوجد رقم هاتف محفوظ للعميل في الفاتورة.");
   if(!items||!items.length)throw new Error("لا توجد أصناف في الفاتورة.");
-  const dataUrl=drawSaleInvoicePng(inv,items,settings||{});
-  const imageBase64=dataUrl.substring(dataUrl.indexOf(",")+1);
-  const {data,error}=await db.functions.invoke("send-sale-invoice-image",{body:{invoice_id:id,image_base64:imageBase64}});
+  const invoiceCanvas=drawSaleInvoiceCanvas(inv,items,settings||{});
+  const pdfBlob=window.AGInvoicePdf.buildInvoicePdf(invoiceCanvas);
+  const pdfBase64=await window.AGInvoicePdf.blobToBase64(pdfBlob);
+  const {data,error}=await db.functions.invoke("send-sale-invoice-pdf",{body:{invoice_id:id,pdf_base64:pdfBase64}});
   if(error){
    let serverMessage="";
    try{const response=error.context;if(response&&typeof response.clone==="function"){const payload=await response.clone().json();serverMessage=payload?.error||"";}}catch{}
    throw new Error(serverMessage||error.message||"تعذر الاتصال بخدمة واتساب.");
   }
-  if(!data?.ok)throw new Error(data?.error||"لم يؤكد واتساب إرسال الفاتورة.");
-  notice((silent?"واتساب قبل طلب إرسال صورة الفاتورة تلقائيًا. ":"واتساب قبل طلب إرسال صورة الفاتورة. ")+"رقم الفاتورة: "+inv.invoice_no);
+  if(!data?.ok)throw new Error(data?.error||"لم يؤكد واتساب إرسال ملف PDF.");
+  notice((silent?"واتساب قبل طلب إرسال ملف PDF تلقائيًا. ":"واتساب قبل طلب إرسال ملف PDF. ")+"رقم الفاتورة: "+inv.invoice_no);
   return true;
- }catch(err){notice("تعذر إرسال صورة الفاتورة: "+(err.message||err),true);return false;}
+ }catch(err){notice("تعذر إرسال ملف PDF عبر واتساب: "+(err.message||err),true);return false;}
  finally{if(button)button.disabled=false;}
 }
 async function loadSales(){
  const [pr,inv]=await Promise.all([db.from("erp_products").select("id,name,quantity,sale_price").gt("quantity",0).order("name"),db.from("erp_sales_invoices").select("*").order("created_at",{ascending:false}).limit(100)]);
  if(pr.error||inv.error){notice("شغّل accounting/upgrade-04.sql في Supabase أولاً: "+(pr.error||inv.error).message,true);return;}
  products=pr.data||[];$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();if(!$("#sale-lines").children.length)saleAddLine();
- $("#sales-body").innerHTML=(inv.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><div class='inline-actions'><button class='secondary print-sale' data-id='"+x.id+"'>طباعة</button><button class='secondary send-sale-whatsapp' data-id='"+x.id+"'>واتساب</button></div></td></tr>").join("")||"<tr><td colspan='7'>لا توجد فواتير مسجلة.</td></tr>";
+ $("#sales-body").innerHTML=(inv.data||[]).map(x=>"<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><div class='inline-actions'><button class='secondary print-sale' data-id='"+x.id+"'>طباعة / PDF</button><button class='secondary send-sale-whatsapp' data-id='"+x.id+"'>PDF واتساب</button></div></td></tr>").join("")||"<tr><td colspan='7'>لا توجد فواتير مسجلة.</td></tr>";
 }
 $("#sale-add-line").onclick=saleAddLine;
 $("#sale-lines").onchange=e=>{const tr=e.target.closest("tr");if(e.target.classList.contains("sale-product")){const p=products.find(x=>x.id===e.target.value);if(p){tr.querySelector(".sale-price").value=p.sale_price;tr.querySelector(".sale-qty").max=p.quantity;}saleCalc();}};
@@ -186,7 +190,7 @@ $("#sale-form").onsubmit=async e=>{
  const payments=[["drawer","sale-pay-drawer"],["vodafone_cash","sale-pay-vodafone"],["instapay","sale-pay-instapay"]].map(([account_code,id])=>({account_code,amount:Number($("#"+id).value||0)}));
  const args={p_invoice_no:$("#sale-no").value.trim(),p_invoice_date:$("#sale-date").value,p_customer_name:$("#sale-customer").value.trim()||"عميل نقدي",p_customer_phone:$("#sale-phone").value.trim()||null,p_discount:Number($("#sale-discount").value||0),p_notes:$("#sale-notes").value.trim()||null,p_items:items,p_payments:payments};
  const btn=e.submitter;if(btn)btn.disabled=true;
- try{const {data:invoiceId,error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();if(window.WA_AUTO_SEND_ENABLED===true&&args.p_customer_phone&&invoiceId){await sendSaleInvoiceImage(invoiceId,null,{silent:true});}}
+ try{const {data:invoiceId,error}=await db.rpc("erp_create_sale",args);if(error)throw error;notice("تم حفظ الفاتورة بنجاح. تم خصم المخزون وتسجيل كل جزء من التحصيل في حسابه.");$("#sale-form").reset();$("#sale-lines").innerHTML="";$("#sale-no").value=saleInvoiceNo();$("#sale-date").value=localDate();$("#sale-discount").value=0;["drawer","vodafone","instapay"].forEach(k=>$("#sale-pay-"+k).value=0);await loadSales();await loadCashbox();await dashboard();if(window.WA_AUTO_SEND_ENABLED===true&&window.WA_CLIENT_SEND_ENABLED===true&&args.p_customer_phone&&invoiceId){await sendSaleInvoicePdf(invoiceId,null,{silent:true});}}
  catch(err){notice("لم يتم حفظ الفاتورة: "+(err.message||err),true);}
  finally{if(btn)btn.disabled=false;}
 };
@@ -265,7 +269,7 @@ async function loadPurchases(){
  if(!$("#purchase-lines").children.length)purchaseAddLine();
  const invoiceIds=(ir.data||[]).map(x=>x.id);let itemStats={};
  if(invoiceIds.length){const {data:its,error:itemsError}=await db.from("erp_purchase_invoice_items").select("invoice_id,quantity").in("invoice_id",invoiceIds);if(itemsError){notice("تعذر تحميل عدد الأصناف في فواتير الشراء: "+itemsError.message,true);return;}(its||[]).forEach(it=>{if(!itemStats[it.invoice_id])itemStats[it.invoice_id]={lines:0,qty:0};itemStats[it.invoice_id].lines++;itemStats[it.invoice_id].qty+=Number(it.quantity||0);});}
- $("#purchases-body").innerHTML=(ir.data||[]).map(x=>{const st=itemStats[x.id]||{lines:0,qty:0};return "<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+st.lines+" صنف / "+st.qty+" قطعة</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-purchase\" data-id=\""+x.id+"\">طباعة</button></td></tr>";}).join("")||"<tr><td colspan='8'>لا توجد فواتير شراء.</td></tr>";
+ $("#purchases-body").innerHTML=(ir.data||[]).map(x=>{const st=itemStats[x.id]||{lines:0,qty:0};return "<tr><td>"+esc(x.invoice_no)+"</td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.supplier_name||"مورد نقدي")+"</td><td>"+st.lines+" صنف / "+st.qty+" قطعة</td><td>"+money(x.total)+"</td><td>"+money(x.paid)+"</td><td>"+money(x.remaining)+"</td><td><button class=\"secondary print-purchase\" data-id=\""+x.id+"\">طباعة / PDF</button></td></tr>";}).join("")||"<tr><td colspan='8'>لا توجد فواتير شراء.</td></tr>";
 }
 $("#purchase-add-line").onclick=purchaseAddLine;
 $("#purchase-lines").oninput=e=>{if(e.target.classList.contains("purchase-imeis"))return;purchaseCalc();};
@@ -301,8 +305,67 @@ $("#purchase-form").onsubmit=async e=>{
  finally{if(btn)btn.disabled=false;}
 };
 
-async function loadMaintenance(){let data;try{data=await fetchAll("erp_maintenance_orders");data.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}catch(error){notice("شغّل ملف accounting/upgrade-02.sql في Supabase أولاً: "+error.message,true);return;}const labels={received:"تم الاستلام",diagnosing:"تحت الفحص",waiting_parts:"في انتظار قطع غيار",in_repair:"تحت الإصلاح",ready:"جاهز للتسليم",delivered:"تم التسليم",cancelled:"ملغي"};$("#maintenance-body").innerHTML=(data||[]).map(x=>"<tr><td>"+esc(x.ticket_no)+"</td><td>"+esc(x.customer_name)+"</td><td>"+esc(x.device_name)+"</td><td>"+esc(x.problem)+"</td><td>"+(labels[x.status]||x.status)+"</td><td>"+new Date(x.received_at).toLocaleDateString("ar-EG")+"</td></tr>").join("")||"<tr><td colspan='6'>لا توجد أجهزة مسجلة.</td></tr>";}
-$("#maintenance-form").onsubmit=async e=>{e.preventDefault();const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:Number($("#m-estimate").value||0),notes:$("#m-notes").value.trim()||null};const {error}=await db.from("erp_maintenance_orders").insert(row);if(error){notice("تعذر حفظ أمر الصيانة: "+error.message,true);return;}notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket);$("#maintenance-form").reset();await loadMaintenance();};
+async function loadMaintenance(){
+ let data;
+ try{data=await fetchAll("erp_maintenance_orders");data.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
+ catch(error){notice("تعذر تحميل الصيانة: "+error.message,true);return;}
+ const labels={received:"تم الاستلام",diagnosing:"تحت الفحص",waiting_parts:"في انتظار قطع غيار",in_repair:"تحت الإصلاح",ready:"جاهز للاستلام",delivered:"تم التسليم",cancelled:"ملغي"};
+ const options=Object.entries(labels).map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("");
+ $("#maintenance-body").innerHTML=(data||[]).map(x=>{
+  const deposit=Number(x.deposit||0),cost=Number(x.estimated_cost||0);
+  return "<tr><td>"+esc(x.ticket_no)+"</td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_phone||"بدون هاتف")+"</small></td><td>"+esc(x.device_name)+"</td><td>"+esc(x.problem)+"</td><td>"+money(cost)+"</td><td>"+money(deposit)+"</td><td>"+money(Math.max(0,cost-deposit))+"</td><td><select class='maintenance-status' data-id='"+esc(x.id)+"' data-current='"+esc(x.status)+"'>"+options+"</select></td><td>"+new Date(x.received_at).toLocaleDateString("ar-EG")+"</td></tr>";
+ }).join("")||"<tr><td colspan='9'>لا توجد أجهزة مسجلة.</td></tr>";
+ $("#maintenance-body").querySelectorAll(".maintenance-status").forEach(select=>{select.value=select.dataset.current;});
+}
+$("#maintenance-body").onchange=async e=>{
+ const select=e.target.closest(".maintenance-status");if(!select)return;
+ const id=select.dataset.id,previous=select.dataset.current,next=select.value;if(previous===next)return;
+ select.disabled=true;
+ try{
+  const update={status:next};if(next==="delivered")update.delivered_at=new Date().toISOString();
+  const {error}=await db.from("erp_maintenance_orders").update(update).eq("id",id).eq("owner_id",session.user.id);
+  if(error)throw error;select.dataset.current=next;
+  if(next==="ready"&&previous!=="ready"){
+   const {data,error:sendError}=await db.functions.invoke("notify-maintenance-ready",{body:{maintenance_order_id:id}});
+   if(sendError)notice("تم تحديث الحالة إلى جاهز. إشعار واتساب غير مفعّل حاليًا؛ هنفعّله بعد إعداد Meta.",false);
+   else if(data?.status==="accepted")notice("الجهاز جاهز وواتساب قبل طلب الإشعار.");
+   else notice("تم تحديث الحالة؛ نتيجة إشعار واتساب: "+(data?.status||"غير مؤكدة"),true);
+  }else notice("تم تحديث حالة أمر الصيانة.");
+ }catch(error){notice("تعذر تحديث حالة الصيانة: "+(error.message||error),true);}
+ finally{await loadMaintenance();}
+};
+$("#maintenance-form").onsubmit=async e=>{
+ e.preventDefault();
+ const cost=Number($("#m-estimate").value||0),deposit=Number($("#m-deposit").value||0);
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(deposit)||deposit<0||deposit>cost){notice("العربون يجب أن يكون صفرًا أو أكثر ولا يتجاوز التكلفة المتوقعة.",true);return;}
+ const ticket="REP-"+localDate().replaceAll("-","")+"-"+String(Date.now()).slice(-5);
+ const paymentAccount=$("#m-payment-account").value;
+ const row={owner_id:session.user.id,ticket_no:ticket,customer_name:$("#m-customer").value.trim(),customer_phone:$("#m-phone").value.trim()||null,device_name:$("#m-device").value.trim(),device_color:$("#m-color").value.trim()||null,problem:$("#m-problem").value.trim(),accessories:$("#m-accessories").value.trim()||null,estimated_cost:cost,notes:$("#m-notes").value.trim()||null};
+ const {data:orderId,error}=await db.rpc("erp_create_maintenance_order_with_deposit",{
+  p_ticket_no:ticket,
+  p_customer_name:row.customer_name,
+  p_customer_phone:row.customer_phone,
+  p_device_name:row.device_name,
+  p_device_color:row.device_color,
+  p_problem:row.problem,
+  p_accessories:row.accessories,
+  p_estimated_cost:cost,
+  p_deposit:deposit,
+  p_notes:row.notes,
+  p_payment_account:paymentAccount
+ });
+ if(error){
+  const missingRpc=["PGRST202","42883"].includes(error.code)||/could not find the function|function .* does not exist/i.test(error.message||"");
+  if(deposit===0&&missingRpc){
+   const {error:legacyError}=await db.from("erp_maintenance_orders").insert(row);
+   if(legacyError){notice("تعذر حفظ أمر الصيانة: "+legacyError.message,true);return;}
+   notice("تم حفظ أمر الصيانة بدون عربون. لتفعيل تسجيل العربون في الخزنة، يلزم تنفيذ تحديث قاعدة البيانات أولاً.");
+   $("#maintenance-form").reset();await loadMaintenance();return;
+  }
+  notice("تعذر حفظ أمر الصيانة. لا تقبل عربونًا قبل تطبيق تحديث الصيانة والخزنة في قاعدة الاختبار: "+error.message,true);return;
+ }
+ notice("تم استلام الجهاز وإنشاء أمر صيانة رقم "+ticket+(deposit>0?" وتسجيل العربون في الخزنة.":"."));$("#maintenance-form").reset();await loadMaintenance();if(deposit>0)await loadCashbox();
+};
 
 
 async function loadSettings(){
@@ -358,8 +421,8 @@ async function loadReturns(){const type=$("#return-type").value;$("#return-date"
 $("#return-type").onchange=loadReturns;
 $("#return-invoice").onchange=async()=>{const id=$("#return-invoice").value,type=$("#return-type").value;$("#return-items").innerHTML="";if(!id)return;const table=type==="sale"?"erp_sales_invoice_items":"erp_purchase_invoice_items",price=type==="sale"?"unit_price":"unit_cost";const {data,error}=await db.from(table).select("id,product_id,product_name,quantity,"+price).eq("invoice_id",id);if(error){notice(error.message,true);return;}const {data:returned,error:re}=await db.from("erp_returns").select("id").eq("invoice_id",id).eq("return_type",type);if(re){notice(re.message,true);return;}const ids=(returned||[]).map(x=>x.id);let sums={};if(ids.length){const {data:ri,error:rie}=await db.from("erp_return_items").select("invoice_item_id,quantity").in("return_id",ids);if(rie){notice(rie.message,true);return;}(ri||[]).forEach(x=>sums[x.invoice_item_id]=(sums[x.invoice_item_id]||0)+Number(x.quantity));}returnInvoiceItems=(data||[]).map(x=>({...x,price:Number(x[price]||0),returned:sums[x.id]||0}));$("#return-items").innerHTML=returnInvoiceItems.map(x=>"<tr data-item='"+x.id+"'><td>"+esc(x.product_name)+"</td><td>"+x.quantity+"</td><td>"+x.returned+"</td><td><input class='return-qty' type='number' min='0' max='"+Math.max(0,x.quantity-x.returned)+"' value='0' step='1' style='width:85px'></td><td>"+money(x.price)+"</td></tr>").join("")||"<tr><td colspan='5'>لا توجد أصناف.</td></tr>";};
 $("#return-form").onsubmit=async e=>{e.preventDefault();const id=$("#return-invoice").value;if(!id){notice("اختر الفاتورة الأصلية.",true);return;}const items=[...$("#return-items").querySelectorAll("tr[data-item]")].map(tr=>({invoice_item_id:tr.dataset.item,quantity:Number(tr.querySelector(".return-qty").value)})).filter(x=>x.quantity>0);if(!items.length){notice("حدد كمية مرتجع لصنف واحد على الأقل.",true);return;}const type=$("#return-type").value;const payments=[["drawer","return-pay-drawer"],["vodafone_cash","return-pay-vodafone"],["instapay","return-pay-instapay"]].map(([account_code,k])=>({account_code,amount:Number($("#"+k).value||0)}));const b=e.submitter;if(b)b.disabled=true;try{const {error}=await db.rpc("erp_post_return",{p_return_no:$("#return-no").value.trim(),p_return_type:type,p_invoice_id:id,p_return_date:$("#return-date").value,p_notes:$("#return-notes").value.trim(),p_items:items,p_refund_payments:payments});if(error)throw error;notice("تم حفظ المرتجع وتحديث المخزون"+(type==="sale"?" وتسجيل رد المبلغ في الخزنة.":" وتحديث حساب المورد.") );$("#return-form").reset();$("#return-items").innerHTML="";await loadReturns();await loadProducts();await loadCashbox();await dashboard();}catch(err){notice("تعذر حفظ المرتجع: "+err.message,true);}finally{if(b)b.disabled=false;}};
-async function printInvoice(type,id){let w=null;try{w=window.open("","_blank");if(!w){notice("اسمح بفتح النوافذ المنبثقة لطباعة الفاتورة.",true);return;}w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><body style='font-family:Arial;text-align:center;padding:30px'>جاري تجهيز الفاتورة...</body></html>");const sales=type==="sale",head=sales?"erp_sales_invoices":"erp_purchase_invoices",itemsTable=sales?"erp_sales_invoice_items":"erp_purchase_invoice_items";const [{data:inv,error:ie},{data:items,error:ite},{data:settings}]=await Promise.all([db.from(head).select("*").eq("id",id).single(),db.from(itemsTable).select("*").eq("invoice_id",id),db.from("erp_shop_settings").select("*").maybeSingle()]);if(ie||ite)throw ie||ite;const s=settings||{},title=s.shop_name||"الجباس ستور",person=sales?inv.customer_name:inv.supplier_name;const rows=(items||[]).map(x=>"<tr><td>"+esc(x.product_name)+"</td><td>"+x.quantity+"</td><td>"+money(sales?x.unit_price:x.unit_cost)+"</td><td>"+money(x.line_total)+"</td></tr>").join("");w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><title>"+esc(inv.invoice_no)+"</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{text-align:center}p{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #aaa;padding:9px;text-align:right}.sum{margin-top:18px;font-weight:bold}.foot{text-align:center;margin-top:40px}</style><h1>"+esc(title)+"</h1><p>"+esc(s.shop_name_en||"AL GABAS STORE")+"<br>"+esc(s.address||"")+"<br>"+esc(s.phone||"")+"</p><hr><h2>"+(sales?"فاتورة بيع":"فاتورة شراء")+"</h2><p>رقم الفاتورة: "+esc(inv.invoice_no)+"　 التاريخ: "+esc(inv.invoice_date)+"<br>"+(sales?"العميل: ":"المورد: ")+esc(person||"—")+"</p><table><thead><tr><th>الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>"+rows+"</tbody></table><div class='sum'>الإجمالي: "+money(inv.total)+"<br>المدفوع: "+money(inv.paid)+"<br>المتبقي: "+money(inv.remaining)+"</div><p class='foot'>"+esc(s.invoice_note||"شكراً لتعاملكم معنا")+"</p><script>window.onload=()=>window.print()<\/script></html>");w.document.close();}catch(e){if(w&&!w.closed)w.close();notice("تعذرت طباعة الفاتورة: "+e.message,true);}}
-$("#sales-body").onclick=e=>{const print=e.target.closest(".print-sale"),send=e.target.closest(".send-sale-whatsapp");if(print)printInvoice("sale",print.dataset.id);if(send)sendSaleInvoiceImage(send.dataset.id,send);};
+async function printInvoice(type,id){let w=null;try{w=window.open("","_blank");if(!w){notice("اسمح بفتح النوافذ المنبثقة لطباعة الفاتورة.",true);return;}w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><body style='font-family:Arial;text-align:center;padding:30px'>جاري تجهيز الفاتورة...</body></html>");const sales=type==="sale",head=sales?"erp_sales_invoices":"erp_purchase_invoices",itemsTable=sales?"erp_sales_invoice_items":"erp_purchase_invoice_items";const [{data:inv,error:ie},{data:items,error:ite},{data:settings}]=await Promise.all([db.from(head).select("*").eq("id",id).single(),db.from(itemsTable).select("*").eq("invoice_id",id),db.from("erp_shop_settings").select("*").maybeSingle()]);if(ie||ite)throw ie||ite;const s=settings||{},title=s.shop_name||"الجباس ستور",person=sales?inv.customer_name:inv.supplier_name;const createdAt=inv.created_at?new Date(inv.created_at):new Date((inv.invoice_date||"")+"T00:00:00"),invoiceDate=inv.invoice_date?new Date(inv.invoice_date+"T00:00:00"):createdAt,dateText=invoiceDate.toLocaleDateString("ar-EG"),timeText=createdAt.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const rows=(items||[]).map(x=>"<tr><td>"+esc(x.product_name)+"</td><td>"+x.quantity+"</td><td>"+money(sales?x.unit_price:x.unit_cost)+"</td><td>"+money(x.line_total)+"</td></tr>").join("");w.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><title>"+esc(inv.invoice_no)+"</title><style>@page{size:A4;margin:12mm}body{font-family:Tahoma,Arial,sans-serif;padding:0;color:#111}h1{text-align:center}tr,td,th,.sum,.meta{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}p{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #aaa;padding:9px;text-align:right}.sum{margin-top:18px;font-weight:bold}.foot{text-align:center;margin-top:40px;color:#64748b}.meta{display:grid;grid-template-columns:1fr;gap:12px;margin:18px 0;padding:16px;background:#f7f9fc;border:1px solid #dfe5ee;border-radius:12px}.meta p{margin:0;text-align:right;line-height:1.9;font-size:13px}.meta b{color:#123b68}h2{color:#123b68;border-bottom:2px solid #d8b15b;padding-bottom:10px}table{margin-top:22px;font-size:12px}th{background:#eaf0f7;color:#123b68}td,th{border:1px solid #e2e8f0;padding:11px}.sum{margin-top:20px;padding:16px;background:#f7f9fc;border:1px solid #dfe5ee;border-radius:12px;line-height:2}@media(max-width:600px){body{padding:12px}.meta{grid-template-columns:1fr}.brand{padding:18px}}</style><h1>"+esc(title)+"</h1><p>"+esc(s.shop_name_en||"AL GABAS STORE")+"<br>"+esc(s.address||"")+"<br>"+esc(s.phone||"")+"</p><hr><h2>"+(sales?"فاتورة بيع":"فاتورة شراء")+"</h2><div class='meta'><p><b>رقم الفاتورة</b><br>"+esc(inv.invoice_no)+"</p><p><b>التاريخ والوقت</b><br>"+dateText+" — "+timeText+"</p><p><b>"+(sales?"العميل":"المورد")+"</b><br>"+esc(person||"—")+"</p></div><table><thead><tr><th>الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>"+rows+"</tbody></table><div class='sum'>الإجمالي: "+money(inv.total)+"<br>المدفوع: "+money(inv.paid)+"<br>المتبقي: "+money(inv.remaining)+"</div><p class='foot'>"+esc(s.invoice_note||"شكراً لتعاملكم معنا")+"</p><script>window.onload=()=>window.print()<\/script></html>");w.document.close();}catch(e){if(w&&!w.closed)w.close();notice("تعذرت طباعة الفاتورة: "+e.message,true);}}
+$("#sales-body").onclick=e=>{const print=e.target.closest(".print-sale"),send=e.target.closest(".send-sale-whatsapp");if(print)printInvoice("sale",print.dataset.id);if(send)sendSaleInvoicePdf(send.dataset.id,send);};
 $("#purchases-body").onclick=e=>{const b=e.target.closest(".print-purchase");if(b)printInvoice("purchase",b.dataset.id);};
 
 boot();

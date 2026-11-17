@@ -132,10 +132,10 @@
 <label>اسم العميل<input id="m-customer" required></label><label>رقم الهاتف<input id="m-phone" inputmode="tel"></label>
 <label>نوع الجهاز وموديله<input id="m-device" required placeholder="مثال: iPhone 13 Pro"></label><label>لون الجهاز<input id="m-color"></label>
 <label class="wide">العطل المبلغ عنه<input id="m-problem" required></label><label class="wide">الملحقات المستلمة<input id="m-accessories" placeholder="مثال: الجهاز فقط / شاحن / علبة"></label>
-<label>التكلفة المتوقعة<input id="m-estimate" type="number" min="0" step="0.01" value="0"></label><label>ملاحظات<input id="m-notes"></label>
+<label>التكلفة المتوقعة<input id="m-estimate" type="number" min="0" step="0.01" value="0" required></label><label>العربون<input id="m-deposit" type="number" min="0" step="0.01" value="0" required></label><label>استلام العربون في<select id="m-payment-account"><option value="drawer">درج الكاش</option><option value="vodafone_cash">فودافون كاش</option><option value="instapay">إنستا باي</option></select></label><label class="wide">ملاحظات<input id="m-notes"></label>
 <div class="wide"><button class="primary" type="submit">حفظ أمر الصيانة</button></div>
-</form></div>
-<div class="panel"><h3>أجهزة الصيانة</h3><div class="table-wrap"><table><thead><tr><th>رقم الأمر</th><th>العميل</th><th>الجهاز</th><th>العطل</th><th>الحالة</th><th>تاريخ الاستلام</th></tr></thead><tbody id="maintenance-body"><tr><td colspan="6">لا توجد أجهزة مسجلة.</td></tr></tbody></table></div></div>
+</form><p class="muted tiny">يُسجل العربون كحركة واردة في حساب الخزنة الذي تختاره، داخل نفس العملية التي تنشئ أمر الصيانة. يلزم تطبيق تحديث قاعدة البيانات المقترح أولاً.</p></div>
+<div class="panel"><h3>أجهزة الصيانة</h3><div class="table-wrap"><table><thead><tr><th>رقم الأمر</th><th>العميل / الهاتف</th><th>الجهاز</th><th>العطل</th><th>التكلفة</th><th>العربون</th><th>المتبقي</th><th>الحالة</th><th>تاريخ الاستلام</th></tr></thead><tbody id="maintenance-body"><tr><td colspan="9">لا توجد أجهزة مسجلة.</td></tr></tbody></table></div></div>
 </section>
 <section class="page" id="page-expenses" hidden>
 <div class="section-head"><div><h2>مصروفات المحل</h2><p class="muted">سجّل المصروفات اليومية واختر الحساب الذي تم الدفع منه.</p></div></div>
@@ -186,7 +186,7 @@
  ];
  function loadConfigAndApp(){
   const c=document.createElement("script");c.src="../config.js";
-  c.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261113-whatsapp-image";document.body.appendChild(a);};
+  c.onload=function(){const p=document.createElement("script");p.src="pdf-builder.js?v=20261117";p.onload=function(){const a=document.createElement("script");a.src="app.js?v=20261117-pdf";document.body.appendChild(a);};p.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل أداة إنشاء PDF.";};document.body.appendChild(p);};
   c.onerror=function(){document.getElementById("login-error").textContent="تعذر تحميل ملف إعدادات الاتصال config.js.";};
   document.body.appendChild(c);
  }

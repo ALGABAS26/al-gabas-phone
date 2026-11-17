@@ -1,0 +1,12 @@
+[package]
+name = "ag-system-desktop"
+version = "0.1.0"
+description = "AG System Windows desktop client"
+authors = ["ALGABAS26"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = "=2.7.2"
+
+[dependencies]
+tauri = { version = "=2.12.3", features = [] }

@@ -5,9 +5,17 @@ on:
   push:
     branches:
       - work/ag-system-whatsapp-image-prototype
+      - work/ag-system-maintenance-invoice-ready-whatsapp
   pull_request:
     paths:
       - "supabase/functions/**"
+      - "supabase/proposals/**"
+      - "scripts/tests/supabase-proposals-*.sql"
+      - ".github/workflows/whatsapp-validation-tests.yml"
+
+concurrency:
+  group: ag-system-whatsapp-validation-tests.yml-${{ github.event_name }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   validation-tests:
@@ -17,5 +25,41 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Type-check WhatsApp Edge Functions
+        working-directory: supabase/functions
+        run: deno check --node-modules-dir=auto send-sale-invoice-image/index.ts send-sale-invoice-pdf/index.ts notify-maintenance-ready/index.ts whatsapp-meta-webhook/index.ts
       - name: Run WhatsApp validation tests
-        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts
+        run: deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/send-sale-invoice-pdf/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
+
+  sql-proposal-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap isolated Supabase-like schema
+        run: psql -v ON_ERROR_STOP=1 -f scripts/tests/supabase-proposals-bootstrap.sql
+      - name: Apply maintenance and deposit proposal
+        run: psql -v ON_ERROR_STOP=1 -f supabase/proposals/maintenance-deposit-and-whatsapp-ready.sql
+      - name: Apply WhatsApp ledger and webhook proposal
+        run: psql -v ON_ERROR_STOP=1 -f supabase/proposals/whatsapp-meta-webhook-rpc.sql
+      - name: Run transaction, duplicate, and webhook smoke tests
+        run: psql -v ON_ERROR_STOP=1 -f scripts/tests/supabase-proposals-smoke.sql

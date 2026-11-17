@@ -1,5 +1,5 @@
-const CACHE_NAME = "algabas-store-shell-v10";
-const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./manifest.webmanifest", "./store-icon.svg", "./logo.png"];
+const CACHE_NAME = "ag-system-shell-v11";
+const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./pdf-builder.js", "./manifest.webmanifest", "./store-icon.svg", "./logo.png"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
