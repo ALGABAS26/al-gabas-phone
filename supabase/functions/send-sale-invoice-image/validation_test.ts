@@ -1,4 +1,4 @@
-import { decodePngBase64, fetchWithTimeout, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { decodePngBase64, fetchWithTimeout, isWhatsAppSendEnabled, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 
 function assertEquals<T>(actual: T, expected: T): void {
   if (actual !== expected) throw new Error(`Expected ${String(expected)}, got ${String(actual)}`);
@@ -74,4 +74,13 @@ Deno.test("fetchWithTimeout aborts a pending request", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+Deno.test("WhatsApp sending is disabled unless the server flag is exactly true", () => {
+  assertEquals(isWhatsAppSendEnabled(undefined), false);
+  assertEquals(isWhatsAppSendEnabled(""), false);
+  assertEquals(isWhatsAppSendEnabled("false"), false);
+  assertEquals(isWhatsAppSendEnabled("TRUE"), false);
+  assertEquals(isWhatsAppSendEnabled("true"), true);
 });
