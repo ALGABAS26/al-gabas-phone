@@ -39,6 +39,8 @@ jobs:
         run: npm install
       - name: Check application JavaScript syntax
         run: node --check accounting/app.js
+      - name: Test invoice PDF builder
+        run: node --test scripts/tests/pdf-builder.test.cjs
 
       - name: Add Android platform and generate branded icons
         run: |
