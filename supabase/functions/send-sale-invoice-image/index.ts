@@ -1,4 +1,4 @@
-import { decodePngBase64, fetchWithTimeout, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
+import { decodePngBase64, fetchWithTimeout, isWhatsAppSendEnabled, normalizeEgyptPhone } from "../_shared/whatsapp-validation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 
 const corsHeaders = {
@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  if (Deno.env.get("WA_SEND_ENABLED") !== "true") {
+  if (!isWhatsAppSendEnabled(Deno.env.get("WA_SEND_ENABLED"))) {
     return json({ error: "إرسال واتساب غير مفعّل على الخادم حتى الآن." }, 503);
   }
 
