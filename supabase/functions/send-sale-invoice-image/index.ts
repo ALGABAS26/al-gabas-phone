@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
   const mediaForm = new FormData();
   mediaForm.append("messaging_product", "whatsapp");
   mediaForm.append("type", "image/png");
-  mediaForm.append("file", new Blob([imageBytes], { type: "image/png" }), "sale-invoice.png");
+  mediaForm.append("file", new Blob([imageBytes.buffer as ArrayBuffer], { type: "image/png" }), "sale-invoice.png");
 
   let mediaResponse: Response;
   try {
