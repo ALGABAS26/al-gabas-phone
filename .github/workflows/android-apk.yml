@@ -1,5 +1,9 @@
 name: Build AG system Android app
 
+concurrency:
+  group: ag-system-android-apk.yml-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
