@@ -47,7 +47,18 @@
 - `WA_WEBHOOK_VERIFY_TOKEN`
 - `SUPABASE_SERVICE_ROLE_KEY` (يبقى على الخادم فقط)
 
-## 6) ما يجب اختباره قبل أي إرسال حقيقي
+## 6) نشر الدوال بعد نجاح اختبار قاعدة الاختبار فقط
+بعد مراجعة SQL وتجهيز الأسرار، سجّل الدخول إلى Supabase CLI ثم نفّذ على مشروع الاختبار أولًا:
+
+```sh
+supabase functions deploy send-sale-invoice-pdf --project-ref <PROJECT_REF>
+supabase functions deploy notify-maintenance-ready --project-ref <PROJECT_REF>
+supabase functions deploy whatsapp-meta-webhook --project-ref <PROJECT_REF>
+```
+
+لا تنشر الدالة القديمة `send-sale-invoice-image`؛ التطبيق يستخدم مسار PDF الجديد. اترك `WA_SEND_ENABLED=false`.
+
+## 7) ما يجب اختباره قبل أي إرسال حقيقي
 - نجاح وفشل تحدي GET الخاص بـ Meta.
 - رفض توقيع POST غير الصحيح.
 - قبول توقيع صحيح دون تغيير جسم الطلب.
