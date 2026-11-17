@@ -1,0 +1,7 @@
+{
+  "name": "ag-system-supabase-functions",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "2.58.0"
+  }
+}
