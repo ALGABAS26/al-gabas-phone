@@ -1,0 +1,53 @@
+name: Supabase SQL proposal smoke tests
+
+on:
+  push:
+    branches:
+      - work/ag-system-maintenance-invoice-ready-whatsapp
+    paths:
+      - "supabase/proposals/**"
+      - "scripts/tests/supabase-proposals-*.sql"
+      - ".github/workflows/supabase-sql-proposal-tests.yml"
+  pull_request:
+    paths:
+      - "supabase/proposals/**"
+      - "scripts/tests/supabase-proposals-*.sql"
+      - ".github/workflows/supabase-sql-proposal-tests.yml"
+
+concurrency:
+  group: supabase-sql-proposal-tests-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  sql-proposal-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap isolated Supabase-like schema
+        run: psql -v ON_ERROR_STOP=1 -f scripts/tests/supabase-proposals-bootstrap.sql
+      - name: Apply maintenance and deposit proposal
+        run: psql -v ON_ERROR_STOP=1 -f supabase/proposals/maintenance-deposit-and-whatsapp-ready.sql
+      - name: Apply WhatsApp ledger and webhook proposal
+        run: psql -v ON_ERROR_STOP=1 -f supabase/proposals/whatsapp-meta-webhook-rpc.sql
+      - name: Run transaction, duplicate, and webhook smoke tests
+        run: psql -v ON_ERROR_STOP=1 -f scripts/tests/supabase-proposals-smoke.sql
