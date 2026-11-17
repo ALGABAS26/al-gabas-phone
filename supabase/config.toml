@@ -5,3 +5,7 @@ verify_jwt = true
 
 [functions.notify-maintenance-ready]
 verify_jwt = true
+
+# Meta signs webhook requests with the app secret; the function verifies the signature itself.
+[functions.whatsapp-meta-webhook]
+verify_jwt = false
