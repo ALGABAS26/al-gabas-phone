@@ -10,7 +10,7 @@ This integration is prepared in code only. The sending Edge Functions are not de
 - A strict server-side kill switch permits sending only when `WA_SEND_ENABLED` is exactly `true`.
 - A second client-side kill switch `WA_CLIENT_SEND_ENABLED=false` blocks manual invocation before any Edge Function request. Automatic sending remains disabled through `WA_AUTO_SEND_ENABLED=false`.
 - A new `whatsapp-meta-webhook` Edge Function handles Meta's GET subscription challenge and verifies POST signatures with HMAC-SHA256 over the exact raw body using `WA_META_APP_SECRET`.
-- The webhook extracts `sent`, `delivered`, `read`, and `failed` status updates and calls a narrowly scoped service-role RPC. The SQL proposal updates both invoice and maintenance ledgers and is `supabase/proposals/whatsapp-meta-webhook-rpc.sql`.
+- The webhook extracts `sent`, `delivered`, `read`, and `failed` status updates and calls a narrowly scoped service-role RPC. The SQL proposal updates both invoice and maintenance ledgers and is `supabase/proposals/whatsapp-meta-webhook-rpc.sql`; it also changes invoice claim handling to one deduplicated delivery slot shared by the legacy image and PDF document paths.
 - Webhook signature, parsing, and status mapping tests are included in CI.
 
 ## Important activation blockers
@@ -46,6 +46,6 @@ This integration is prepared in code only. The sending Edge Functions are not de
 ## Local validation
 Run:
 ```sh
-deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
+deno test --allow-read supabase/functions/send-sale-invoice-image/validation_test.ts supabase/functions/send-sale-invoice-pdf/validation_test.ts supabase/functions/notify-maintenance-ready/validation_test.ts supabase/functions/whatsapp-meta-webhook/validation_test.ts
 ```
 These tests do not deploy functions, contact Meta, or send WhatsApp messages.
